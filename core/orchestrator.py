@@ -1,11 +1,13 @@
 from services.memory import MemoryService
+from services.llm import LLMService
 
 
 class Orchestrator:
+
     def __init__(self):
         self.version = "Genesis"
-        self.status = "Initializing"
         self.memory = MemoryService()
+        self.llm = LLMService()
 
     def start(self):
         print("=" * 50)
@@ -44,4 +46,7 @@ class Orchestrator:
 
             return
 
-        print(f"Received: {user_input}")
+        answer = self.llm.ask(user_input)
+
+        print("\nAMALGAM:\n")
+        print(answer)
