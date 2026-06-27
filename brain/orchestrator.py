@@ -1,5 +1,6 @@
 from services.memory import MemoryService
 from services.llm import LLMService
+from brain.router import Router
 
 
 class Orchestrator:
@@ -8,6 +9,7 @@ class Orchestrator:
         self.version = "Genesis"
         self.memory = MemoryService()
         self.llm = LLMService()
+        self.router = Router()
 
     def start(self):
         print("=" * 50)
@@ -17,6 +19,7 @@ class Orchestrator:
 
     def process(self, user_input: str):
 
+        # Memory Commands
         if user_input.lower().startswith("remember "):
 
             data = user_input[9:]
@@ -46,7 +49,12 @@ class Orchestrator:
 
             return
 
-        answer = self.llm.ask(user_input)
+        # AI Model Selection
+        model = self.router.choose_model(user_input)
+
+        print(f"\n[Model Selected: {model}]")
+
+        answer = self.llm.ask(user_input, model)
 
         print("\nAMALGAM:\n")
         print(answer)

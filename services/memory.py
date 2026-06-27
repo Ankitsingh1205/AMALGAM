@@ -6,7 +6,7 @@ class MemoryService:
 
     def __init__(self):
 
-        self.file = "data/memory.json"
+        self.file = "storage/memory/memory.json"
 
         self.memories = {}
 
