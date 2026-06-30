@@ -1,61 +1,132 @@
+﻿from kernel.action_registry import ActionRegistry
 from tools.tool_registry import ToolRegistry
 from services.service_registry import ServiceRegistry
+from config import constants
+from services.logger import get_logger
 
 
 class Dispatcher:
 
     def __init__(self):
 
+        self.actions = ActionRegistry()
         self.tools = ToolRegistry()
         self.services = ServiceRegistry()
+        self.logger = get_logger("dispatcher")
 
     def dispatch(self, task):
 
-        print()
-        print(f"[Dispatcher] Action: {task.action}")
+        action = getattr(task, "action", None)
 
-        calculator = self.tools.get("calculator")
-        python = self.tools.get("python")
-        files = self.tools.get("files")
+        if not action:
+            message = "Dispatcher Error: malformed task."
+            self.logger.error(message)
+            return message
 
-        llm = self.services.get("llm")
+        self.logger.info("dispatching task", action=action)
 
-        if task.action == "calculate":
+        route = self.actions.get(action)
 
-            result = calculator.calculate(task.data)
+        if route:
 
-            print(f"[Calculator] {task.data} = {result}")
+            target_name, method_name = route
 
-            return result
+            target = self.tools.get(target_name)
 
-        if task.action == "run_python":
+            if target is None:
+                target = self.services.get(target_name)
 
-            result = python.execute(task.data)
+            if target is None:
+                message = f"Dispatcher Error: missing target '{target_name}'."
+                self.logger.error(message)
+                return message
 
-            print(result)
+            method = getattr(target, method_name, None)
 
-            return result
+            if method is None:
+                message = f"Dispatcher Error: missing method '{method_name}'."
+                self.logger.error(message)
+                return message
 
-        if task.action == "list_files":
+            try:
 
-            result = files.list_dir(task.data or ".")
+                if action == constants.ACTION_REMEMBER:
 
-            print(result)
+                    if (
+                        not isinstance(task.data, (tuple, list))
+                        or len(task.data) != 2
+                    ):
+                        return "Dispatcher Error: remember action requires key and value."
 
-            return result
+                    result = method(task.data[0], task.data[1])
 
-        if task.action in ["chat", "generate_code"]:
+                else:
 
-            result = llm.ask(task.data, task.model)
+                    result = method(getattr(task, "data", None))
+
+            except Exception as e:
+
+                result = f"Dispatcher Error: {e}"
+                self.logger.error(result)
+
+            self.logger.debug(
+                "dispatch complete",
+                action=action,
+                target=target_name,
+            )
 
             print()
 
-            print("AMALGAM:\n")
+            if action == constants.ACTION_PROJECT_SUMMARY:
 
+                summary = result["summary"]
+
+                print("AMALGAM")
+                print()
+                print(f"Project Root : {summary['project_root']}")
+                print(f"Packages     : {len(summary['python_packages'])}")
+                print(f"Documents    : {summary['documents']}")
+                print(f"Symbols      : {summary['symbols']}")
+                print(f"Relations    : {summary['relationships']}")
+
+            else:
+
+                print("AMALGAM:")
+                print()
+                print(result)
+
+            return result
+
+        if action in [
+            constants.ACTION_CHAT,
+            constants.ACTION_GENERATE_CODE,
+        ]:
+
+            llm = self.services.get(constants.SERVICE_LLM)
+
+            if llm is None:
+                result = "Dispatcher Error: missing service 'llm'."
+                self.logger.error(result)
+                return result
+
+            try:
+                result = llm.ask(
+                    getattr(task, "data", None),
+                    getattr(task, "model", None),
+                )
+
+            except Exception as e:
+                result = f"Dispatcher Error: {e}"
+                self.logger.error(result)
+
+            print()
+            print("AMALGAM:\n")
             print(result)
 
             return result
 
-        print("Unknown action.")
+        message = f"Unknown action: {action}"
+        self.logger.warning(message, action=action)
 
-        return None
+        return message
+

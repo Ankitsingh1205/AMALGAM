@@ -1,12 +1,14 @@
 import json
-import os
+from pathlib import Path
+
+from config import settings
 
 
 class MemoryService:
 
     def __init__(self):
 
-        self.file = "storage/memory/memory.json"
+        self.file = settings.MEMORY_FILE
 
         self.memories = {}
 
@@ -14,23 +16,51 @@ class MemoryService:
 
     def load(self):
 
-        if os.path.exists(self.file):
+        try:
+            self.file = Path(self.file)
 
-            with open(self.file, "r") as f:
+            if not self.file.exists():
+                self.memories = {}
+                return
+
+            with self.file.open("r", encoding="utf-8") as f:
 
                 self.memories = json.load(f)
 
+        except (OSError, json.JSONDecodeError):
+            self.memories = {}
+
     def save(self):
 
-        with open(self.file, "w") as f:
+        try:
+            self.file = Path(self.file)
 
-            json.dump(self.memories, f, indent=4)
+            self.file.parent.mkdir(parents=True, exist_ok=True)
+
+            with self.file.open("w", encoding="utf-8") as f:
+
+                json.dump(self.memories, f, indent=4)
+
+            return True
+
+        except OSError:
+            return False
 
     def remember(self, key, value):
 
         self.memories[key] = value
 
-        self.save()
+        return self.save()
+
+    def forget(self, key):
+
+        if key in self.memories:
+
+            del self.memories[key]
+
+            return self.save()
+
+        return True
 
     def recall(self, key):
 

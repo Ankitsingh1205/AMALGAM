@@ -1,8 +1,15 @@
-from services.service_registry import ServiceRegistry
+﻿from services.service_registry import ServiceRegistry
 
-registry = ServiceRegistry()
 
-print("Installed Services:")
+def test_service_registry_lists_expected_services():
+    registry = ServiceRegistry()
 
-for service in registry.list_services():
-    print("-", service)
+    assert set(registry.list_services()) == {"llm", "memory", "ollama", "project"}
+
+
+def test_service_registry_returns_service_by_name():
+    registry = ServiceRegistry()
+
+    assert registry.get("memory") is not None
+    assert registry.get("missing") is None
+

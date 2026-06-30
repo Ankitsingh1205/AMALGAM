@@ -1,8 +1,12 @@
 from brain.brain import Brain
 from kernel.executor import Executor
+from config import constants
+from services.logger import get_logger
 
 
 def main():
+
+    logger = get_logger("cli")
 
     brain = Brain()
 
@@ -12,17 +16,27 @@ def main():
 
     while True:
 
-        user_input = input("\nYou: ")
+        try:
+            user_input = input("\nYou: ")
 
-        if user_input.lower() in ["exit", "quit"]:
+            if user_input.lower() in constants.APP_EXIT_COMMANDS:
 
-            print("AMALGAM shutting down...")
+                print("AMALGAM shutting down...")
+                logger.info("shutdown requested")
 
+                break
+
+            task = brain.think(user_input)
+
+            kernel.execute(task)
+
+        except KeyboardInterrupt:
+            print("\nAMALGAM shutting down...")
+            logger.info("shutdown interrupted")
             break
 
-        task = brain.think(user_input)
-
-        kernel.execute(task)
+        except Exception as e:
+            logger.error(f"Runtime Error: {e}")
 
 
 if __name__ == "__main__":

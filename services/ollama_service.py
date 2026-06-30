@@ -1,12 +1,24 @@
-import ollama
+try:
+    import ollama
+except ImportError:
+    ollama = None
+
+from config import settings
 
 
 class OllamaService:
 
     def __init__(self):
-        self.client = ollama.Client(host="http://127.0.0.1:11434")
+        if ollama is None:
+            self.client = None
+            return
+
+        self.client = ollama.Client(host=settings.OLLAMA_HOST)
 
     def is_running(self):
+
+        if self.client is None:
+            return False
 
         try:
             self.client.list()
@@ -16,9 +28,16 @@ class OllamaService:
 
     def list_models(self):
 
-        response = self.client.list()
+        if self.client is None:
+            return []
 
-        return [model.model for model in response.models]
+        try:
+            response = self.client.list()
+
+            return [model.model for model in response.models]
+
+        except Exception:
+            return []
 
     def count_models(self):
 

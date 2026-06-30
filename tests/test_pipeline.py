@@ -1,21 +1,23 @@
 from brain.brain import Brain
 from kernel.executor import Executor
 
-brain = Brain()
-kernel = Executor()
 
-queries = [
-    "144*82",
-    "Write Python code to print Hello World",
-    "What is Artificial Intelligence?"
-]
+def test_canonical_math_pipeline_returns_result():
+    brain = Brain()
+    kernel = Executor()
 
-for query in queries:
+    task = brain.think("144*82")
+    result = kernel.execute(task)
 
-    print()
-    print("=" * 50)
-    print("User:", query)
+    assert result == 11808
 
-    task = brain.think(query)
 
-    kernel.execute(task)
+def test_canonical_general_pipeline_returns_llm_error_without_crashing():
+    brain = Brain()
+    kernel = Executor()
+
+    task = brain.think("What is Artificial Intelligence?")
+    result = kernel.execute(task)
+
+    assert isinstance(result, str)
+    assert result

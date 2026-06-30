@@ -1,4 +1,4 @@
-from config.models import MODELS
+from config import settings
 
 
 class Router:
@@ -42,12 +42,12 @@ class Router:
         ]
 
         if any(word in text for word in coding_keywords):
-            return MODELS["coding"]
+            return settings.MODELS["coding"]
 
         if any(word in text for word in reasoning_keywords):
-            return MODELS["reasoning"]
+            return settings.MODELS["reasoning"]
 
         if any(word in text for word in creative_keywords):
-            return MODELS["creative"]
+            return settings.MODELS["creative"]
 
-        return MODELS["general"]
+        return settings.MODELS["general"]

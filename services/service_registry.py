@@ -1,6 +1,8 @@
-from services.llm import LLMService
+﻿from services.llm import LLMService
 from services.memory import MemoryService
 from services.ollama_service import OllamaService
+from services.project_service import ProjectService
+from config import constants
 
 
 class ServiceRegistry:
@@ -8,9 +10,10 @@ class ServiceRegistry:
     def __init__(self):
 
         self.services = {
-            "llm": LLMService(),
-            "memory": MemoryService(),
-            "ollama": OllamaService()
+            constants.SERVICE_LLM: LLMService(),
+            constants.SERVICE_MEMORY: MemoryService(),
+            constants.SERVICE_OLLAMA: OllamaService(),
+            constants.SERVICE_PROJECT: ProjectService()
         }
 
     def get(self, name):
@@ -20,3 +23,4 @@ class ServiceRegistry:
     def list_services(self):
 
         return list(self.services.keys())
+

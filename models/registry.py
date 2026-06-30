@@ -1,10 +1,10 @@
-from config.models import MODELS
+from config import settings
 
 
 class ModelRegistry:
 
     def __init__(self):
-        self.models = MODELS
+        self.models = settings.MODELS
 
     def get(self, role: str):
 

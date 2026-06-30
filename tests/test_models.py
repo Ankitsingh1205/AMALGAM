@@ -1,19 +1,22 @@
+from config import settings
+from models.registry import ModelRegistry
 from models.selector import ModelSelector
 
-selector = ModelSelector()
 
-plans = [
-    "use_general_model",
-    "use_coder",
-    "use_creative_model",
-    "use_reasoning",
-    "use_fast"
-]
+def test_model_registry_returns_configured_model():
+    registry = ModelRegistry()
 
-for p in plans:
+    assert registry.get("coding") == settings.MODELS["coding"]
 
-    print(
-        p,
-        "->",
-        selector.select(p)
-    )
+
+def test_model_registry_falls_back_to_general():
+    registry = ModelRegistry()
+
+    assert registry.get("missing") == settings.MODELS["general"]
+
+
+def test_model_selector_maps_plan_to_model():
+    selector = ModelSelector()
+
+    assert selector.select("use_coder") == settings.MODELS["coding"]
+    assert selector.select("use_fast") == settings.MODELS["fast"]

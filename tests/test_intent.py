@@ -1,15 +1,25 @@
 from brain.intent.intent import IntentAnalyzer
 
-intent = IntentAnalyzer()
 
-tests = [
-    "Write Python code",
-    "Solve 144 * 82",
-    "Remember my name",
-    "Write a poem",
-    "Search latest AI news",
-    "Who are you?"
-]
+def test_detects_math_expression():
+    intent = IntentAnalyzer()
 
-for t in tests:
-    print(f"{t}  --->  {intent.analyze(t)}")
+    assert intent.detect("144 * 82") == "math"
+
+
+def test_detects_coding_request():
+    intent = IntentAnalyzer()
+
+    assert intent.detect("Write Python code") == "coding"
+
+
+def test_defaults_to_general_intent():
+    intent = IntentAnalyzer()
+
+    assert intent.detect("Who are you?") == "general"
+
+def test_detects_project_request():
+    intent = IntentAnalyzer()
+
+    assert intent.detect("Explain my project") == "project"
+

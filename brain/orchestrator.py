@@ -1,21 +1,22 @@
 from services.memory import MemoryService
 from services.llm import LLMService
 from brain.router import Router
+from config import constants, settings
 
 
 class Orchestrator:
 
     def __init__(self):
-        self.version = "Genesis"
+        self.version = settings.APP_VERSION
         self.memory = MemoryService()
         self.llm = LLMService()
         self.router = Router()
 
     def start(self):
-        print("=" * 50)
-        print("AMALGAM AI")
+        print(constants.BUILD_SEPARATOR * 50)
+        print(settings.APP_NAME)
         print(f"Version : {self.version}")
-        print("=" * 50)
+        print(constants.BUILD_SEPARATOR * 50)
 
     def process(self, user_input: str):
 

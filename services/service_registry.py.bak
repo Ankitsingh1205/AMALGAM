@@ -1,0 +1,23 @@
+from services.llm import LLMService
+from services.memory import MemoryService
+from services.ollama_service import OllamaService
+from config import constants
+
+
+class ServiceRegistry:
+
+    def __init__(self):
+
+        self.services = {
+            constants.SERVICE_LLM: LLMService(),
+            constants.SERVICE_MEMORY: MemoryService(),
+            constants.SERVICE_OLLAMA: OllamaService()
+        }
+
+    def get(self, name):
+
+        return self.services.get(name)
+
+    def list_services(self):
+
+        return list(self.services.keys())

@@ -1,26 +1,28 @@
-from brain.intent.intent import IntentAnalyzer
-from brain.planner.planner import Planner
+from brain.brain import Brain
 
-intent = IntentAnalyzer()
 
-planner = Planner()
+def test_brain_creates_math_task():
+    brain = Brain()
 
-queries = [
-    "144*82",
-    "Write Python code",
-    "What is AI?"
-]
+    task = brain.think("144*82")
 
-for query in queries:
+    assert task.intent == "math"
+    assert task.action == "calculate"
 
-    detected = intent.detect(query)
 
-    task = planner.create_task(detected, query)
+def test_brain_creates_coding_task():
+    brain = Brain()
 
-    print()
+    task = brain.think("Write Python code")
 
-    print("Input :", query)
+    assert task.intent == "coding"
+    assert task.action == "generate_code"
 
-    print("Intent:", detected)
 
-    print("Task  :", task)
+def test_brain_creates_general_task():
+    brain = Brain()
+
+    task = brain.think("What is AI?")
+
+    assert task.intent == "general"
+    assert task.action == "chat"

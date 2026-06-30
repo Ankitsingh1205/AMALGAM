@@ -1,10 +1,13 @@
+from config import constants, settings
+
+
 class KernelState:
 
     def __init__(self):
 
-        self.version = "0.2"
+        self.version = settings.APP_VERSION
 
-        self.status = "Booting"
+        self.status = constants.KERNEL_STATUS_BOOTING
 
         self.models_loaded = 0
 
@@ -16,4 +19,4 @@ class KernelState:
 
     def ready(self):
 
-        self.status = "Online"
+        self.status = constants.KERNEL_STATUS_ONLINE

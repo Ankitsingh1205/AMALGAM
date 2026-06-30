@@ -1,4 +1,4 @@
-from config.models import MODELS
+from config import constants, settings
 
 
 class ToolRouter:
@@ -7,18 +7,18 @@ class ToolRouter:
 
         routes = {
 
-            "use_coder": MODELS["coding"],
+            "use_coder": settings.MODELS["coding"],
 
-            "use_creative_model": MODELS["creative"],
+            "use_creative_model": settings.MODELS["creative"],
 
-            "use_general_model": MODELS["general"],
+            "use_general_model": settings.MODELS["general"],
 
-            "use_memory": "memory",
+            "use_memory": constants.TOOL_MEMORY,
 
-            "use_internet": "internet",
+            "use_internet": constants.TOOL_INTERNET,
 
-            "use_calculator": "calculator"
+            "use_calculator": constants.TOOL_CALCULATOR
 
         }
 
-        return routes.get(plan, MODELS["general"])
+        return routes.get(plan, settings.MODELS["general"])
