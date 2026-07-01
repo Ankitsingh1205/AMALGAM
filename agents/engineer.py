@@ -89,3 +89,21 @@ class EngineerAgent:
             Progress dictionary.
         """
         return self.autonomous.progress(goal_id)
+
+    def run(self, shared_context) -> dict:
+        """Multi-agent pipeline entry point.
+
+        Reads the ``task`` from the shared context and delegates to
+        :meth:`execute`. This method is additive and does not affect
+        existing public APIs.
+
+        Args:
+            shared_context: The shared context containing the task.
+
+        Returns:
+            Result dictionary from :meth:`execute`.
+        """
+        task = shared_context.get("task", "")
+        if not task:
+            return {"success": False, "error": "No task in shared context"}
+        return self.execute(task)

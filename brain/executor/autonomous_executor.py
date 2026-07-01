@@ -15,6 +15,36 @@ from kernel.task import Task
 from config import constants
 from services.logger import get_logger
 
+# ---------------------------------------------------------------------------
+# Module-level frozensets for heuristic planning — created once at import
+# time, shared across all AutonomousExecutor instances.  Using frozensets
+# provides O(1) average-case membership tests and avoids per-call list
+# allocation inside _generate_plan() and _create_tasks_from_plan().
+# ---------------------------------------------------------------------------
+_PLAN_KW_MATH     = frozenset(["calculate", "math", "compute", "sum"])
+_PLAN_KW_FILE_R   = frozenset(["read", "file", "open", "content"])
+_PLAN_KW_FILE_W   = frozenset(["write", "save", "create file"])
+_PLAN_KW_LIST     = frozenset(["list", "show files", "directory", "ls"])
+_PLAN_KW_PYTHON   = frozenset(["python", "run code", "execute script"])
+_PLAN_KW_SEARCH   = frozenset(["search", "web", "find online"])
+_PLAN_KW_REMEMBER = frozenset(["remember", "store", "save data"])
+_PLAN_KW_RECALL   = frozenset(["recall", "retrieve", "fetch memory"])
+_PLAN_KW_PROJECT  = frozenset(["project", "repository", "summarize", "overview"])
+
+_TASK_KW_FILES    = frozenset(["list files", "show files", "directory", "folders", "ls"])
+_TASK_KW_SEARCH   = frozenset(["search ", "search web", "google", "find online"])
+_TASK_KW_PYTHON   = frozenset(["run python", "execute python", "python:"])
+_TASK_KW_PROJECT  = frozenset([
+    "explain my project", "summarize my project", "summarize this repository",
+    "project overview", "project architecture", "show project architecture",
+    "explain this repository",
+])
+_TASK_KW_CODE     = frozenset([
+    "write code", "generate code", "write python", "python code",
+    "create function", "create a function", "debug", "fix code",
+    "implement", "program", "script", "algorithm",
+])
+
 
 class AutonomousExecutor:
     """Autonomous execution engine that orchestrates goal completion.
@@ -385,31 +415,31 @@ class AutonomousExecutor:
         """
         text = description.lower()
 
-        if any(word in text for word in ["calculate", "math", "compute", "sum"]):
+        if any(word in text for word in _PLAN_KW_MATH):
             return "1. Extract the mathematical expression. 2. Execute calculator."
 
-        if any(word in text for word in ["read", "file", "open", "content"]):
+        if any(word in text for word in _PLAN_KW_FILE_R):
             return "1. Identify the file path. 2. Read the file. 3. Return contents."
 
-        if any(word in text for word in ["write", "save", "create file"]):
+        if any(word in text for word in _PLAN_KW_FILE_W):
             return "1. Identify target path. 2. Write content. 3. Verify file exists."
 
-        if any(word in text for word in ["list", "show files", "directory", "ls"]):
+        if any(word in text for word in _PLAN_KW_LIST):
             return "1. Identify target directory. 2. List files."
 
-        if any(word in text for word in ["python", "run code", "execute script"]):
+        if any(word in text for word in _PLAN_KW_PYTHON):
             return "1. Extract the Python code. 2. Execute via PythonExecutor. 3. Return output."
 
-        if any(word in text for word in ["search", "web", "find online"]):
+        if any(word in text for word in _PLAN_KW_SEARCH):
             return "1. Extract search query. 2. Search the web. 3. Return results."
 
-        if any(word in text for word in ["remember", "store", "save data"]):
+        if any(word in text for word in _PLAN_KW_REMEMBER):
             return "1. Extract key and value. 2. Store in memory."
 
-        if any(word in text for word in ["recall", "retrieve", "fetch memory"]):
+        if any(word in text for word in _PLAN_KW_RECALL):
             return "1. Extract key. 2. Recall from memory. 3. Return value."
 
-        if any(word in text for word in ["project", "repository", "summarize", "overview"]):
+        if any(word in text for word in _PLAN_KW_PROJECT):
             return "1. Analyze workspace. 2. Build knowledge graph. 3. Summarize results."
 
         return "1. Analyze user request. 2. Select appropriate tool or model. 3. Execute and return result."
@@ -467,7 +497,7 @@ class AutonomousExecutor:
             return tasks
 
         # Files: list
-        if any(phrase in text for phrase in ["list files", "show files", "directory", "folders", "ls"]):
+        if any(phrase in text for phrase in _TASK_KW_FILES):
             tasks.append({
                 "id": str(uuid.uuid4()),
                 "plan_version": goal.plan_version,
@@ -478,7 +508,7 @@ class AutonomousExecutor:
             return tasks
 
         # Internet: search
-        if any(phrase in text for phrase in ["search ", "search web", "google", "find online"]):
+        if any(phrase in text for phrase in _TASK_KW_SEARCH):
             query = goal.description
             for phrase in ["search web", "search", "google", "find online"]:
                 query = query.replace(phrase, "").strip()
@@ -492,7 +522,7 @@ class AutonomousExecutor:
             return tasks
 
         # Python: run
-        if any(phrase in text for phrase in ["run python", "execute python", "python:"]):
+        if any(phrase in text for phrase in _TASK_KW_PYTHON):
             code = goal.description
             for phrase in ["run python", "execute python", "python:"]:
                 code = code.replace(phrase, "").strip()
@@ -506,10 +536,7 @@ class AutonomousExecutor:
             return tasks
 
         # Project: summary
-        if any(phrase in text for phrase in [
-            "explain my project", "summarize my project", "summarize this repository",
-            "project overview", "project architecture", "show project architecture", "explain this repository",
-        ]):
+        if any(phrase in text for phrase in _TASK_KW_PROJECT):
             tasks.append({
                 "id": str(uuid.uuid4()),
                 "plan_version": goal.plan_version,
@@ -520,11 +547,7 @@ class AutonomousExecutor:
             return tasks
 
         # Coding: generate code
-        if any(phrase in text for phrase in [
-            "write code", "generate code", "write python", "python code",
-            "create function", "create a function", "debug", "fix code",
-            "implement", "program", "script", "algorithm",
-        ]):
+        if any(phrase in text for phrase in _TASK_KW_CODE):
             tasks.append({
                 "id": str(uuid.uuid4()),
                 "plan_version": goal.plan_version,

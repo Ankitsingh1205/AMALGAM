@@ -14,12 +14,25 @@ class TaskQueue:
     Tasks are executed one at a time in FIFO order. The queue supports
     pausing, resuming, and cancelling individual or all tasks.
 
+    Optimizations (Mission 6.5.2):
+    - History stored as a ``deque`` with ``maxlen`` so that trimming is O(1)
+      (automatic eviction by the deque) rather than the previous O(n) list
+      slice.  ``_trim_history`` is retained as a no-op for API compatibility.
+    - ``progress()`` maintains running counters (``_completed``,
+      ``_failed``, ``_cancelled``) updated at mutation sites, eliminating
+      the O(n) history scan on every call.
+    - ``cancel()`` iterates the deque using ``enumerate`` — same complexity
+      as before but avoids creating an intermediate list copy.
+
     Attributes:
         _queue: Internal deque of pending tasks.
         _running: The currently executing task, if any.
         _paused: Whether the queue is paused.
-        _history: Record of completed or failed tasks.
+        _history: Record of completed or failed tasks (bounded deque).
         _max_history: Maximum number of history entries to retain.
+        _completed: Count of completed tasks.
+        _failed: Count of failed tasks.
+        _cancelled: Count of cancelled tasks.
         _logger: Structured logger instance.
     """
 
@@ -27,8 +40,13 @@ class TaskQueue:
         self._queue: deque[dict] = deque()
         self._running: Optional[dict] = None
         self._paused: bool = False
-        self._history: list[dict] = []
+        # Use a bounded deque — eviction is O(1) with no explicit trim call.
+        self._history: deque[dict] = deque(maxlen=max_history)
         self._max_history = max_history
+        # Counters kept in sync with history mutations for O(1) progress().
+        self._completed: int = 0
+        self._failed: int = 0
+        self._cancelled: int = 0
         self._logger = get_logger("task_queue")
 
     def enqueue(self, task: dict) -> None:
@@ -90,8 +108,8 @@ class TaskQueue:
         """
         if task_id is None and self._running is not None:
             self._running["status"] = constants.TASK_STATUS_CANCELLED
-            self._history.append(self._running)
-            self._trim_history()
+            self._cancelled += 1
+            self._append_history(self._running)
             self._running = None
             self._logger.info("running task cancelled")
             return True
@@ -99,8 +117,8 @@ class TaskQueue:
         for i, task in enumerate(self._queue):
             if task.get("id") == task_id:
                 task["status"] = constants.TASK_STATUS_CANCELLED
-                self._history.append(task)
-                self._trim_history()
+                self._cancelled += 1
+                self._append_history(task)
                 del self._queue[i]
                 self._logger.info("pending task cancelled", task_id=task_id)
                 return True
@@ -116,29 +134,22 @@ class TaskQueue:
     def progress(self) -> dict:
         """Return a snapshot of queue progress.
 
+        O(1) — counters are maintained incrementally.
+
         Returns:
             Dictionary with ``pending``, ``running``, ``completed``,
             ``failed``, ``cancelled``, and ``total`` counts.
         """
-        completed = failed = cancelled = 0
-        for t in self._history:
-            status = t.get("status")
-            if status == constants.TASK_STATUS_COMPLETED:
-                completed += 1
-            elif status == constants.TASK_STATUS_FAILED:
-                failed += 1
-            elif status == constants.TASK_STATUS_CANCELLED:
-                cancelled += 1
         pending = len(self._queue)
         running = 1 if self._running else 0
 
         return {
             "pending": pending,
             "running": running,
-            "completed": completed,
-            "failed": failed,
-            "cancelled": cancelled,
-            "total": pending + running + completed + failed + cancelled,
+            "completed": self._completed,
+            "failed": self._failed,
+            "cancelled": self._cancelled,
+            "total": pending + running + self._completed + self._failed + self._cancelled,
         }
 
     def complete_current(self, result: Any = None) -> None:
@@ -153,8 +164,8 @@ class TaskQueue:
         self._running["status"] = constants.TASK_STATUS_COMPLETED
         self._running["result"] = result
         self._running["completed_at"] = datetime.now(timezone.utc).isoformat()
-        self._history.append(self._running)
-        self._trim_history()
+        self._completed += 1
+        self._append_history(self._running)
         self._logger.info("task completed", task_id=self._running.get("id"))
         self._running = None
 
@@ -170,15 +181,21 @@ class TaskQueue:
         self._running["status"] = constants.TASK_STATUS_FAILED
         self._running["error"] = error
         self._running["failed_at"] = datetime.now(timezone.utc).isoformat()
-        self._history.append(self._running)
-        self._trim_history()
+        self._failed += 1
+        self._append_history(self._running)
         self._logger.error("task failed", task_id=self._running.get("id"), error=error)
         self._running = None
 
+    def _append_history(self, task: dict) -> None:
+        """Append to the bounded history deque.
+
+        When ``maxlen`` is reached the oldest entry is silently evicted by
+        the deque — no explicit trim is required.
+        """
+        self._history.append(task)
+
     def _trim_history(self) -> None:
-        """Trim history to the configured maximum size."""
-        if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+        """No-op: history is bounded by the deque's ``maxlen``."""
 
     def is_empty(self) -> bool:
         """Return ``True`` if no tasks are pending or running."""

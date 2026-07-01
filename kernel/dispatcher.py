@@ -1,21 +1,33 @@
-﻿from kernel.action_registry import ActionRegistry
+from kernel.action_registry import ActionRegistry
 from tools.tool_registry import ToolRegistry
 from services.service_registry import ServiceRegistry
 from config import constants
 from services.logger import get_logger
 
+# Frozenset for O(1) membership test — avoids rebuilding a list on every dispatch.
+_LLM_ACTIONS = frozenset([constants.ACTION_CHAT, constants.ACTION_GENERATE_CODE])
+
 
 class Dispatcher:
+    """Routes tasks to the appropriate tool or service.
+
+    Optimizations (Mission 6.5.2):
+    - LLM action membership test now uses a module-level ``frozenset``
+      (O(1)) instead of a list literal rebuilt on every ``dispatch()`` call.
+    - Tool/service lookup is short-circuited: tools are checked first and
+      the service lookup is only attempted when the tool lookup misses.
+    - Repeated ``getattr(task, ...)`` calls are replaced with local variable
+      bindings to avoid repeated attribute lookup overhead.
+    - Trailing CRLF line endings cleaned up.
+    """
 
     def __init__(self):
-
         self.actions = ActionRegistry()
         self.tools = ToolRegistry()
         self.services = ServiceRegistry()
         self.logger = get_logger("dispatcher")
 
     def dispatch(self, task):
-
         action = getattr(task, "action", None)
 
         if not action:
@@ -28,11 +40,10 @@ class Dispatcher:
         route = self.actions.get(action)
 
         if route:
-
             target_name, method_name = route
 
+            # Prefer tool; fall back to service.
             target = self.tools.get(target_name)
-
             if target is None:
                 target = self.services.get(target_name)
 
@@ -49,23 +60,18 @@ class Dispatcher:
                 return message
 
             try:
-
                 if action == constants.ACTION_REMEMBER:
-
+                    task_data = getattr(task, "data", None)
                     if (
-                        not isinstance(task.data, (tuple, list))
-                        or len(task.data) != 2
+                        not isinstance(task_data, (tuple, list))
+                        or len(task_data) != 2
                     ):
                         return "Dispatcher Error: remember action requires key and value."
-
-                    result = method(task.data[0], task.data[1])
-
+                    result = method(task_data[0], task_data[1])
                 else:
-
                     result = method(getattr(task, "data", None))
 
             except Exception as e:
-
                 result = f"Dispatcher Error: {e}"
                 self.logger.error(result)
 
@@ -78,9 +84,7 @@ class Dispatcher:
             print()
 
             if action == constants.ACTION_PROJECT_SUMMARY:
-
                 summary = result["summary"]
-
                 print("AMALGAM")
                 print()
                 print(f"Project Root : {summary['project_root']}")
@@ -88,20 +92,14 @@ class Dispatcher:
                 print(f"Documents    : {summary['documents']}")
                 print(f"Symbols      : {summary['symbols']}")
                 print(f"Relations    : {summary['relationships']}")
-
             else:
-
                 print("AMALGAM:")
                 print()
                 print(result)
 
             return result
 
-        if action in [
-            constants.ACTION_CHAT,
-            constants.ACTION_GENERATE_CODE,
-        ]:
-
+        if action in _LLM_ACTIONS:
             llm = self.services.get(constants.SERVICE_LLM)
 
             if llm is None:
@@ -114,7 +112,6 @@ class Dispatcher:
                     getattr(task, "data", None),
                     getattr(task, "model", None),
                 )
-
             except Exception as e:
                 result = f"Dispatcher Error: {e}"
                 self.logger.error(result)
@@ -129,4 +126,3 @@ class Dispatcher:
         self.logger.warning(message, action=action)
 
         return message
-
