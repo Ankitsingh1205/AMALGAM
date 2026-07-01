@@ -17,6 +17,11 @@ _VALID_TRANSITIONS: dict[str, set[str]] = {
         constants.GOAL_STATUS_VERIFYING,
         constants.GOAL_STATUS_REFLECTING,
         constants.GOAL_STATUS_FAILED,
+        constants.GOAL_STATUS_PAUSED,
+    },
+    constants.GOAL_STATUS_PAUSED: {
+        constants.GOAL_STATUS_RUNNING,
+        constants.GOAL_STATUS_FAILED,
     },
     constants.GOAL_STATUS_VERIFYING: {
         constants.GOAL_STATUS_COMPLETED,
