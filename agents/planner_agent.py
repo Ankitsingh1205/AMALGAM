@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from agents.base_agent import BaseAgent
 from brain.goal.goal import Goal
+from brain.mission import MissionGraph
 from brain.shared_context import SharedContext
 from config import constants
 from services.logger import get_logger
@@ -14,7 +15,7 @@ class PlannerAgent(BaseAgent):
     """Agent responsible for creating high-level plans from user tasks.
 
     The planner inspects the task description, creates a structured plan,
-    and publishes a :class:`Goal` into the shared context.
+    and publishes a :class:`Goal` or Mission plan into the shared context.
     """
 
     def __init__(
@@ -63,6 +64,48 @@ class PlannerAgent(BaseAgent):
         self._status = "completed"
 
         return {"success": True, "goal_id": goal.id, "plan": plan}
+
+    def run_missions(self, graph: MissionGraph, shared_context: SharedContext) -> dict:
+        """Plan missions from a MissionGraph and publish to shared context.
+
+        Validates the graph, performs a topological sort, and filters out
+        terminal missions. The resulting execution plan is stored in the
+        shared context under ``mission_plan``.
+
+        Args:
+            graph: The MissionGraph to plan.
+            shared_context: The shared context to publish results into.
+
+        Returns:
+            Dictionary with ``success``, ``mission_count``, and ``plan``.
+        """
+        self._status = "running"
+        self._record("mission_plan_start")
+
+        try:
+            from brain.planner.planner import Planner
+            planner = Planner()
+            plan = planner.plan_missions(graph)
+        except ValueError as e:
+            self._logger.error("mission planning failed", error=str(e))
+            shared_context.set("error", str(e))
+            self._status = "failed"
+            return {"success": False, "error": str(e)}
+
+        shared_context.set("mission_plan", plan)
+        shared_context.set("mission_count", len(plan))
+
+        self._record(
+            "mission_plan_complete",
+            {"mission_count": len(plan)},
+        )
+        self._status = "completed"
+
+        return {
+            "success": True,
+            "mission_count": len(plan),
+            "plan": [m.title for m in plan],
+        }
 
     @staticmethod
     def _generate_plan(description: str) -> str:
