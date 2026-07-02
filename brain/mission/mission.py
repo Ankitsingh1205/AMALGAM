@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
+from brain.mission.event import MissionEvent
+from brain.mission.event_types import MissionEventType
 from brain.mission.mission_id import MissionID
 from brain.mission.mission_priority import MissionPriority
 from brain.mission.mission_status import MissionStatus, _VALID_TRANSITIONS, _UNIVERSAL_SINKS
@@ -40,6 +42,7 @@ class Mission:
     children: list[Mission] = field(default_factory=list)
     dependencies: list[Mission] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
+    event_bus: Optional[Any] = field(default=None, repr=False, compare=False)
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
@@ -72,8 +75,12 @@ class Mission:
                 f"Invalid transition: {self.status.value!r} -> {new_status.value!r}."
             )
 
+        old_status = self.status
         self.status = new_status
         self.updated_at = datetime.now(timezone.utc).isoformat()
+
+        if self.event_bus is not None:
+            self._publish_status_event(old_status, new_status)
 
     def add_child(self, child: Mission) -> None:
         """Add a sub-mission if it is not already present."""
@@ -94,6 +101,52 @@ class Mission:
         """Remove a dependency if it is present."""
         if dependency in self.dependencies:
             self.dependencies.remove(dependency)
+
+    def _publish_status_event(
+        self, old_status: MissionStatus, new_status: MissionStatus
+    ) -> None:
+        """Publish lifecycle events through the attached Event Bus.
+
+        Emits ``MISSION_STATUS_CHANGED`` for every transition, plus the
+        appropriate terminal event when the mission enters a terminal
+        state (``MISSION_COMPLETED``, ``MISSION_FAILED``, or
+        ``MISSION_CANCELLED``).
+
+        Args:
+            old_status: The mission status before the transition.
+            new_status: The mission status after the transition.
+        """
+        bus = self.event_bus
+
+        # MISSION_STATUS_CHANGED — fired for every transition.
+        bus.publish(MissionEvent(
+            event_type=MissionEventType.MISSION_STATUS_CHANGED,
+            mission_id=str(self.id),
+            payload={
+                "old_status": old_status.value,
+                "new_status": new_status.value,
+            },
+        ))
+
+        # Terminal-state specific events.
+        if new_status == MissionStatus.COMPLETED:
+            bus.publish(MissionEvent(
+                event_type=MissionEventType.MISSION_COMPLETED,
+                mission_id=str(self.id),
+                payload={"status": new_status.value},
+            ))
+        elif new_status == MissionStatus.FAILED:
+            bus.publish(MissionEvent(
+                event_type=MissionEventType.MISSION_FAILED,
+                mission_id=str(self.id),
+                payload={"status": new_status.value},
+            ))
+        elif new_status == MissionStatus.CANCELLED:
+            bus.publish(MissionEvent(
+                event_type=MissionEventType.MISSION_CANCELLED,
+                mission_id=str(self.id),
+                payload={"status": new_status.value},
+            ))
 
     def to_dict(self) -> dict:
         """Serialize the mission to a plain dictionary.
