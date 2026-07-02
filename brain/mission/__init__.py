@@ -4,6 +4,7 @@ from brain.mission.event_bus import MissionEventBus
 from brain.mission.event_types import MissionEventType
 from brain.mission.graph import MissionGraph
 from brain.mission.mission import Mission
+from brain.mission.mission_executor import MissionExecutionError, MissionExecutor
 from brain.mission.mission_id import MissionID
 from brain.mission.mission_priority import MissionPriority
 from brain.mission.mission_status import MissionStatus
@@ -15,6 +16,8 @@ __all__ = [
     "MissionEvent",
     "MissionEventBus",
     "MissionEventType",
+    "MissionExecutionError",
+    "MissionExecutor",
     "MissionGraph",
     "MissionID",
     "MissionPersistence",

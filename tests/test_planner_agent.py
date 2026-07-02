@@ -58,7 +58,7 @@ def test_planner_sets_priority(planner):
 
 
 # ---------------------------------------------------------------------------
-# Mission planning via PlannerAgent
+# Mission planning via PlannerAgent (backward-compatible: plan_only=True)
 # ---------------------------------------------------------------------------
 
 
@@ -76,7 +76,7 @@ class TestPlannerAgentMissionPlanning:
         graph = self._make_graph(a, b)
         graph.add_dependency(a, b)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is True
         assert result["mission_count"] == 2
         assert result["plan"] == ["A", "B"]
@@ -90,7 +90,7 @@ class TestPlannerAgentMissionPlanning:
         graph = self._make_graph(a, b)
         graph.add_dependency(a, b)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is True
         assert result["mission_count"] == 1
         assert result["plan"] == ["B"]
@@ -102,7 +102,7 @@ class TestPlannerAgentMissionPlanning:
         graph = self._make_graph(a, b)
         graph.add_dependency(a, b)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is True
         assert result["mission_count"] == 1
         assert result["plan"] == ["B"]
@@ -119,7 +119,7 @@ class TestPlannerAgentMissionPlanning:
         graph._nodes[str(b.id)].children.add(str(a.id))
         graph._nodes[str(a.id)].parents.add(str(b.id))
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is False
         assert "cycle" in result["error"].lower()
         assert ctx.get("error") is not None
@@ -128,7 +128,7 @@ class TestPlannerAgentMissionPlanning:
         planner = PlannerAgent()
         graph = MissionGraph()
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is True
         assert result["mission_count"] == 0
         assert result["plan"] == []
@@ -143,8 +143,8 @@ class TestPlannerAgentMissionPlanning:
         graph.add_dependency(a, c)
         ctx1 = SharedContext()
         ctx2 = SharedContext()
-        result1 = planner.run_missions(graph, ctx1)
-        result2 = planner.run_missions(graph, ctx2)
+        result1 = planner.run_missions(graph, ctx1, plan_only=True)
+        result2 = planner.run_missions(graph, ctx2, plan_only=True)
         assert result1["plan"] == result2["plan"]
 
     def test_run_missions_dependency_ordering(self):
@@ -159,7 +159,7 @@ class TestPlannerAgentMissionPlanning:
         graph.add_dependency(b, d)
         graph.add_dependency(c, d)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         plan = result["plan"]
         assert plan.index("A") < plan.index("B")
         assert plan.index("A") < plan.index("C")
@@ -176,7 +176,7 @@ class TestPlannerAgentMissionPlanning:
         graph.add_dependency(a, b)
         graph.add_dependency(c, d)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["mission_count"] == 4
         plan = result["plan"]
         assert plan.index("A") < plan.index("B")
@@ -189,7 +189,33 @@ class TestPlannerAgentMissionPlanning:
         c = Mission(id=MissionID.generate(), title="C", status=MissionStatus.CANCELLED)
         graph = self._make_graph(a, b, c)
         ctx = SharedContext()
-        result = planner.run_missions(graph, ctx)
+        result = planner.run_missions(graph, ctx, plan_only=True)
         assert result["success"] is True
         assert result["mission_count"] == 0
         assert result["plan"] == []
+
+    # ------------------------------------------------------------------
+    # Integrated execution path (plan_only=False — default)
+    # ------------------------------------------------------------------
+
+    def test_run_missions_with_execution(self):
+        planner = PlannerAgent()
+        a = Mission(id=MissionID.generate(), title="A")
+        b = Mission(id=MissionID.generate(), title="B")
+        graph = self._make_graph(a, b)
+        graph.add_dependency(a, b)
+        ctx = SharedContext()
+        # plan_only=False (default) triggers MissionExecutor
+        result = planner.run_missions(graph, ctx)
+        assert "plan" in result
+        assert "execution_result" in result
+        assert "results" in result
+
+    def test_run_missions_with_execution_stores_results(self):
+        planner = PlannerAgent()
+        a = Mission(id=MissionID.generate(), title="A")
+        graph = self._make_graph(a)
+        ctx = SharedContext()
+        result = planner.run_missions(graph, ctx)
+        assert "plan" in result
+        assert ctx.get("mission_results") is not None

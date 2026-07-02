@@ -65,19 +65,25 @@ class PlannerAgent(BaseAgent):
 
         return {"success": True, "goal_id": goal.id, "plan": plan}
 
-    def run_missions(self, graph: MissionGraph, shared_context: SharedContext) -> dict:
-        """Plan missions from a MissionGraph and publish to shared context.
+    def run_missions(self, graph: MissionGraph, shared_context: SharedContext, plan_only: bool = False) -> dict:
+        """Plan missions from a MissionGraph, optionally executing them through MissionExecutor.
 
         Validates the graph, performs a topological sort, and filters out
         terminal missions. The resulting execution plan is stored in the
         shared context under ``mission_plan``.
 
+        When ``plan_only`` is ``False`` (default), the missions are also
+        executed via ``MissionExecutor`` and results are stored under
+        ``mission_results``.
+
         Args:
-            graph: The MissionGraph to plan.
+            graph: The MissionGraph to plan and optionally execute.
             shared_context: The shared context to publish results into.
+            plan_only: If ``True``, only plan without executing.
 
         Returns:
-            Dictionary with ``success``, ``mission_count``, and ``plan``.
+            Dictionary with ``success``, ``mission_count``, ``plan``,
+            and optionally ``execution_result`` and ``results``.
         """
         self._status = "running"
         self._record("mission_plan_start")
@@ -99,12 +105,44 @@ class PlannerAgent(BaseAgent):
             "mission_plan_complete",
             {"mission_count": len(plan)},
         )
+
+        if plan_only:
+            self._status = "completed"
+            return {
+                "success": True,
+                "mission_count": len(plan),
+                "plan": [m.title for m in plan],
+            }
+
+        try:
+            from brain.mission import MissionExecutor
+            executor = MissionExecutor()
+            execution_result = executor.execute(graph)
+        except Exception as e:
+            self._logger.error("mission execution failed", error=str(e))
+            shared_context.set("error", str(e))
+            self._status = "failed"
+            return {
+                "success": False,
+                "error": str(e),
+                "mission_count": len(plan),
+                "plan": [m.title for m in plan],
+            }
+
+        shared_context.set("mission_results", execution_result)
+
+        self._record(
+            "mission_execution_complete",
+            {"executed": execution_result.get("executed", 0)},
+        )
         self._status = "completed"
 
         return {
-            "success": True,
+            "success": execution_result.get("success", False),
             "mission_count": len(plan),
             "plan": [m.title for m in plan],
+            "execution_result": execution_result.get("success", False),
+            "results": execution_result.get("results", {}),
         }
 
     @staticmethod
