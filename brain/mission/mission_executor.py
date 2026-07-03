@@ -96,8 +96,10 @@ class MissionExecutor:
             executed.append(mission)
 
             if result.get("success"):
-                mission.transition(MissionStatus.VERIFYING)
-                mission.transition(MissionStatus.COMPLETED)
+                # Avoid double transition if status_observer already moved mission to COMPLETED
+                if mission.status != MissionStatus.COMPLETED:
+                    mission.transition(MissionStatus.VERIFYING)
+                    mission.transition(MissionStatus.COMPLETED)
             else:
                 mission.transition(MissionStatus.FAILED)
                 mission.error = result.get("error", "Mission execution failed")

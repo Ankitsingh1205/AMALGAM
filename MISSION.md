@@ -17,7 +17,7 @@ It does not speculate about future implementations.
 | Current Version | 0.3.0 |
 | Current Branch | `mission-7` |
 | Current Active Mission | Mission 7 — Mission Engine |
-| Current Milestone | Mission 7.1.5 — Event Bus Integration |
+| Current Milestone | Mission 7.1.8 — Tool Integration |
 | Current Objective | Implement Mission Event Bus while preserving backward compatibility and maintaining a regression-free codebase |
 | Overall Objective | Build an autonomous AI Operating System capable of understanding projects, planning work, executing work, reviewing work, recovering from failures, learning from execution, operating multiple agents, managing tools and knowledge, and coordinating autonomous software development |
 
@@ -71,7 +71,7 @@ It does not speculate about future implementations.
 
 ### Current Milestone
 
-**Mission 7.1.5 — Event Bus Integration.** Implement event publication, subscription, and mission lifecycle notifications while preserving backward compatibility and maintaining a regression-free codebase.
+**Mission 7.1.8 — Tool Integration.** Implement event publication, subscription, and mission lifecycle notifications while preserving backward compatibility and maintaining a regression-free codebase.
 
 ### Remaining Milestones (Within Mission 7)
 
@@ -86,7 +86,7 @@ It does not speculate about future implementations.
 
 - Mission Core (7.1.0–7.1.4): fully implemented and tested
 - Event Bus (7.1.5): in progress — event bus module under development
-- 437 tests passing, 0 regressions
+- 535 tests passing, 0 regressions
 - 3 critical, 6 high security findings from Mission 6.4.3 audit remain unresolved
 - 12 mission specification files in `docs/missions/` remain empty
 - All four root documentation files (AGENTS.md, ARCHITECTURE.md, MISSION.md, TASK.md) are active
@@ -97,7 +97,7 @@ It does not speculate about future implementations.
 
 | Metric | Value |
 |--------|-------|
-| Passing Tests | 437 |
+| Passing Tests | 535 |
 | Test Framework | pytest |
 | Test Files | 75 files in `tests/` |
 | Regression Status | No known regressions |
@@ -114,7 +114,7 @@ It does not speculate about future implementations.
 
 | Metric | Value |
 |--------|-------|
-| Passing tests | 437 |
+| Passing tests | 535 |
 | Known regressions | 0 |
 | Known technical debt | Placeholder files: `brain/session.py`, 12 empty `docs/missions/*.md` files, 7 empty future-layer directories |
 | Known blockers | 3 critical security findings (eval/exec on unsanitized input, path traversal in FileTool). No input sanitization on user input. No workspace boundary enforcement. |

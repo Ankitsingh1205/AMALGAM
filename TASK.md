@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|-------|
 | Current Mission | Mission 7 — Mission Engine |
-| Current Milestone | Mission 7.1.5 — Event Bus Integration |
+| Current Milestone | Mission 7.1.8 — Tool Integration |
 | Current Objective | Implement Mission Event Bus while preserving backward compatibility and maintaining a regression-free codebase |
 | Current Branch | `mission-7` |
-| Current Test Count | 437 (all passing) |
+| Current Test Count | 535 (all passing) |
 
 # Scope
 
@@ -27,7 +27,7 @@
 **Expected deliverables**
 - Event Bus module with publish/subscribe API
 - Mission lifecycle event hooks
-- All existing tests continue passing (437)
+- All existing tests continue passing (535)
 
 **Success criteria**
 - Event Bus passes all new and existing tests
@@ -59,7 +59,7 @@
 - [ ] Implementation complete
 - [ ] Imports valid
 - [ ] Typing valid
-- [ ] Pytest executed (437 passed)
+- [ ] Pytest executed (535 passed)
 - [ ] No regressions
 - [ ] Documentation updated
 - [ ] Git status reviewed
@@ -68,7 +68,7 @@
 # Completion Checklist
 
 - [ ] Architecture reviewed
-- [ ] Tests passed (437 expected)
+- [ ] Tests passed (535 expected)
 - [ ] Report generated
 - [ ] Ready for review
 - [ ] Stop after completion
@@ -76,7 +76,7 @@
 # Session Notes
 
 - Current focus: Mission 7.1.5 Event Bus Integration
-- 437 tests passing baseline — zero-regression mandate
+- 535 tests passing baseline — zero-regression mandate
 - Event publication, subscription, and lifecycle events are the target
 - 12 `docs/missions/` files remain empty — deferred
 - 3 critical security findings remain unfixed — deferred
@@ -90,5 +90,5 @@
 - Event publication
 - Event subscription
 - Mission lifecycle events (created, updated, completed, failed)
-- Full pytest pass (437+)
+- Full pytest pass (535+)
 - Zero regressions
