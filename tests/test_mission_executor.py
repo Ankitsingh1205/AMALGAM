@@ -50,7 +50,7 @@ class TestMissionExecutor:
         """Verify that a simple linear graph executes all missions in order."""
         with patch.object(executor._executor, "run") as mock_run:
             # Mock AutonomousExecutor.run to return a successful goal
-            mock_run.side_effect = lambda description, priority: MockGoal(
+            mock_run.side_effect = lambda description, priority, **kwargs: MockGoal(
                 id="g1", status="completed"
             )
 
@@ -73,7 +73,7 @@ class TestMissionExecutor:
         """Verify that execution stops when a mission fails and halt_on_failure=True."""
         with patch.object(executor._executor, "run") as mock_run:
             # First mission fails
-            mock_run.side_effect = lambda description, priority: MockGoal(
+            mock_run.side_effect = lambda description, priority, **kwargs: MockGoal(
                 id="g1", status="failed", error="Critical Error"
             )
 
@@ -98,7 +98,7 @@ class TestMissionExecutor:
 
         with patch.object(executor._executor, "run") as mock_run:
             # M1 fails, M2 succeeds
-            def side_effect(description, priority):
+            def side_effect(description, priority, **kwargs):
                 if "M1" in description:
                     return MockGoal("g1", "failed", "Error 1")
                 return MockGoal("g2", "completed")

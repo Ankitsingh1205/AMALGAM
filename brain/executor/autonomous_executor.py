@@ -64,6 +64,7 @@ class AutonomousExecutor:
         _retry: ``RetryManager`` for bounded retry logic.
         _memory: ``ExecutionMemory`` for audit records.
         _execution_timeout: Maximum seconds to wait for a single task.
+        _status_observer: Optional callback for external status observation.
         _logger: Structured logger instance.
     """
 
@@ -76,6 +77,7 @@ class AutonomousExecutor:
         retry: Optional[RetryManager] = None,
         memory: Optional[ExecutionMemory] = None,
         execution_timeout: float = 30.0,
+        status_observer: Optional[Any] = None,
     ) -> None:
         self._kernel = kernel_executor or KernelExecutor()
         self._queue = task_queue or TaskQueue()
@@ -84,6 +86,7 @@ class AutonomousExecutor:
         self._retry = retry or RetryManager()
         self._memory = memory or ExecutionMemory()
         self._execution_timeout = execution_timeout
+        self._status_observer = status_observer
         self._logger = get_logger("autonomous_executor")
         # Reuse a single thread pool across all task executions to avoid
         # the overhead of creating and tearing down a pool for every task.
@@ -104,7 +107,20 @@ class AutonomousExecutor:
         """Ensure the thread pool is shut down on GC."""
         self._executor.shutdown(wait=False)
 
-    def run(self, description: str, priority: int = constants.GOAL_PRIORITY_NORMAL) -> Goal:
+    def _notify(self, status: str) -> None:
+        """Notify the optional status observer of a goal status change."""
+        if self._status_observer is not None:
+            try:
+                self._status_observer(status)
+            except Exception:
+                pass  # Observer errors must not break execution
+
+    def run(
+        self,
+        description: str,
+        priority: int = constants.GOAL_PRIORITY_NORMAL,
+        status_observer: Optional[Any] = None,
+    ) -> Goal:
         """Run the full autonomous loop for a new goal.
 
         Creates a ``Goal``, transitions it through the lifecycle, and
@@ -113,10 +129,22 @@ class AutonomousExecutor:
         Args:
             description: Human-readable goal description.
             priority: Optional priority (default ``NORMAL``).
+            status_observer: Optional callback ``(status: str) -> None``
+                invoked on every goal status transition.
 
         Returns:
             The completed or failed ``Goal``.
         """
+        original_observer = self._status_observer
+        if status_observer is not None:
+            self._status_observer = status_observer
+        try:
+            return self._run_core(description, priority)
+        finally:
+            self._status_observer = original_observer
+
+    def _run_core(self, description: str, priority: int) -> Goal:
+        """Core implementation of ``run()`` after observer swap."""
         goal = Goal(
             id=str(uuid.uuid4()),
             description=description,
@@ -135,6 +163,7 @@ class AutonomousExecutor:
         except Exception as e:
             goal.transition(constants.GOAL_STATUS_FAILED)
             goal.error = str(e)
+            self._notify(constants.GOAL_STATUS_FAILED)
             self._memory.record(
                 goal.id,
                 "fatal_error",
@@ -146,6 +175,7 @@ class AutonomousExecutor:
         if not goal.is_terminal():
             goal.transition(constants.GOAL_STATUS_FAILED)
             goal.error = "Loop exited without reaching a terminal state."
+            self._notify(constants.GOAL_STATUS_FAILED)
 
         self._memory.record(goal.id, "finished", goal=self._snapshot(goal))
         self._logger.info("goal finished", goal_id=goal.id, status=goal.status)
@@ -160,12 +190,14 @@ class AutonomousExecutor:
     def _analyze(self, goal: Goal) -> None:
         """Transition the goal to ``ANALYZING`` and record the step."""
         goal.transition(constants.GOAL_STATUS_ANALYZING)
+        self._notify(constants.GOAL_STATUS_ANALYZING)
         self._memory.record(goal.id, "analyze", goal=self._snapshot(goal))
         self._logger.info("goal analyzing", goal_id=goal.id)
 
     def _plan(self, goal: Goal) -> None:
         """Transition the goal to ``PLANNING``, create a plan, and record it."""
         goal.transition(constants.GOAL_STATUS_PLANNING)
+        self._notify(constants.GOAL_STATUS_PLANNING)
         goal.plan = self._generate_plan(goal.description)
         self._memory.record(goal.id, "plan", goal=self._snapshot(goal), plan=goal.plan)
         self._logger.info("goal planned", goal_id=goal.id, plan=goal.plan)
@@ -173,6 +205,7 @@ class AutonomousExecutor:
     def _ready(self, goal: Goal) -> None:
         """Transition the goal to ``READY`` and create queued tasks from the plan."""
         goal.transition(constants.GOAL_STATUS_READY)
+        self._notify(constants.GOAL_STATUS_READY)
         tasks = self._create_tasks_from_plan(goal)
         for task in tasks:
             self._queue.enqueue(task)
@@ -186,6 +219,7 @@ class AutonomousExecutor:
     def _execute_loop(self, goal: Goal) -> None:
         """Core execution loop: dequeue, execute, evaluate, reflect, retry."""
         goal.transition(constants.GOAL_STATUS_RUNNING)
+        self._notify(constants.GOAL_STATUS_RUNNING)
         self._memory.record(goal.id, "running", goal=self._snapshot(goal))
 
         while not goal.is_terminal():
@@ -196,13 +230,16 @@ class AutonomousExecutor:
             if self._queue.is_empty():
                 # All tasks completed successfully
                 goal.transition(constants.GOAL_STATUS_VERIFYING)
+                self._notify(constants.GOAL_STATUS_VERIFYING)
                 self._memory.record(goal.id, "verifying", goal=self._snapshot(goal))
                 if self._verify_goal(goal):
                     goal.transition(constants.GOAL_STATUS_COMPLETED)
                     goal.result = "All tasks completed successfully."
+                    self._notify(constants.GOAL_STATUS_COMPLETED)
                 else:
                     goal.transition(constants.GOAL_STATUS_FAILED)
                     goal.error = "Verification failed after all tasks completed."
+                    self._notify(constants.GOAL_STATUS_FAILED)
                 self._memory.record(goal.id, "verified", goal=self._snapshot(goal))
                 break
 
@@ -284,6 +321,7 @@ class AutonomousExecutor:
     ) -> None:
         """Handle a task failure by reflecting, retrying, or escalating."""
         goal.transition(constants.GOAL_STATUS_REFLECTING)
+        self._notify(constants.GOAL_STATUS_REFLECTING)
 
         reflection = self._reflection.reflect(
             action=task.get("action"),
@@ -328,11 +366,13 @@ class AutonomousExecutor:
             # Re-enqueue the same task
             self._queue.enqueue(task.copy())
             goal.transition(constants.GOAL_STATUS_RUNNING)
+            self._notify(constants.GOAL_STATUS_RUNNING)
             return
 
         if next_step == constants.REFLECTION_STRATEGY_REPLAN:
             self._retry.reset(goal.id)
             goal.transition(constants.GOAL_STATUS_REPLANNING)
+            self._notify(constants.GOAL_STATUS_REPLANNING)
             self._replan(goal)
             return
 
@@ -343,6 +383,7 @@ class AutonomousExecutor:
             if alt_task:
                 self._queue.enqueue(alt_task)
                 goal.transition(constants.GOAL_STATUS_RUNNING)
+                self._notify(constants.GOAL_STATUS_RUNNING)
                 return
             else:
                 self._logger.warning(
@@ -353,6 +394,7 @@ class AutonomousExecutor:
         # Escalation or give up
         goal.transition(constants.GOAL_STATUS_FAILED)
         goal.error = decision.get("message", "Recovery impossible.")
+        self._notify(constants.GOAL_STATUS_FAILED)
 
     def _replan(self, goal: Goal) -> None:
         """Replan a goal by clearing pending tasks and generating a new plan."""
@@ -366,6 +408,7 @@ class AutonomousExecutor:
             self._queue.enqueue(task)
         self._memory.record(goal.id, "replan", goal=self._snapshot(goal), plan=goal.plan)
         goal.transition(constants.GOAL_STATUS_RUNNING)
+        self._notify(constants.GOAL_STATUS_RUNNING)
 
     def _verify_goal(self, goal: Goal) -> bool:
         """Verify that the goal has been completed successfully.

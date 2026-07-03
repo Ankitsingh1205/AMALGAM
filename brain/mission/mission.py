@@ -29,6 +29,8 @@ class Mission:
         children: Nested sub-missions.
         dependencies: Missions that must precede this one.
         metadata: Extensible key-value context.
+        error: Execution error message if the mission failed.
+        event_bus: Optional event bus for lifecycle notifications.
         created_at: ISO timestamp of creation.
         updated_at: ISO timestamp of the last mutation.
     """
@@ -42,6 +44,7 @@ class Mission:
     children: list[Mission] = field(default_factory=list)
     dependencies: list[Mission] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
+    error: str = ""
     event_bus: Optional[Any] = field(default=None, repr=False, compare=False)
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
@@ -163,6 +166,7 @@ class Mission:
             "children": [child.to_dict() for child in self.children],
             "dependencies": [dep.to_dict() for dep in self.dependencies],
             "metadata": dict(self.metadata),
+            "error": self.error,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -201,6 +205,7 @@ class Mission:
             status=status,
             owner=data.get("owner"),
             metadata=dict(data.get("metadata", {})),
+            error=data.get("error", ""),
             created_at=data.get(
                 "created_at", datetime.now(timezone.utc).isoformat()
             ),

@@ -133,6 +133,11 @@ class MissionExecutor:
         (analyze → plan → queue → execute → verify) and returns the
         terminal Goal.
 
+        A ``status_observer`` callback maps Goal status changes to
+        ``Mission`` transitions in real time. Invalid transitions are
+        silently skipped (e.g. ``RUNNING → ANALYZING`` is not allowed
+        by the mission state machine).
+
         Args:
             mission: The mission to execute.
 
@@ -150,9 +155,33 @@ class MissionExecutor:
             title=mission.title,
         )
 
+        # Status observer bridges AutonomousExecutor goal lifecycle
+        # to Mission lifecycle without violating layer boundaries.
+        _GOAL_TO_MISSION_STATUS = {
+            "analyzing": MissionStatus.ANALYZING,
+            "planning": MissionStatus.PLANNING,
+            "ready": MissionStatus.READY,
+            "running": MissionStatus.RUNNING,
+            "verifying": MissionStatus.VERIFYING,
+            "completed": MissionStatus.COMPLETED,
+            "failed": MissionStatus.FAILED,
+            "reflecting": MissionStatus.RECOVERING,
+            "replanning": MissionStatus.RECOVERING,
+        }
+
+        def _status_mapper(status: str) -> None:
+            mapped = _GOAL_TO_MISSION_STATUS.get(status)
+            if mapped is None or mapped == mission.status:
+                return
+            try:
+                mission.transition(mapped)
+            except ValueError:
+                pass  # Invalid transition for current state — skip silently
+
         goal = self._executor.run(
             description=description,
             priority=mission.priority.value,
+            status_observer=_status_mapper,
         )
 
         success = goal.status == "completed"
