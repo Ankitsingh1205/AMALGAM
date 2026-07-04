@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from agents.base_agent import BaseAgent
 from brain.dependency_resolver import DependencyResolver, CycleError
+from brain.fleet_manager import FleetManager
 from brain.messaging import Messaging, Message
 from brain.shared_context import SharedContext
 from brain.work_pool import WorkPool
@@ -20,6 +21,12 @@ class ChiefAgent(BaseAgent):
     ready tasks to the WorkPool.
 
     Uses event-driven execution via the Messaging bus to avoid polling.
+
+    For Mission-level orchestration, :meth:`execute_mission` dispatches a
+    ``MissionGraph`` to ``MissionExecutor`` while publishing lifecycle
+    events through an optional ``MissionEventBus``.  Execution remains
+    owned by ``MissionExecutor``; ``ChiefAgent`` only validates, dispatches,
+    and reports.
     """
 
     def __init__(
@@ -28,10 +35,12 @@ class ChiefAgent(BaseAgent):
         dependency_resolver: DependencyResolver,
         shared_context: Optional[SharedContext] = None,
         messaging: Optional[Messaging] = None,
+        fleet_manager: Optional[FleetManager] = None,
     ) -> None:
         super().__init__("chief", shared_context, messaging)
         self._work_pool = work_pool
         self._resolver = dependency_resolver
+        self._fleet_manager = fleet_manager
 
         # Synchronization for event-driven orchestration
         self._lock = threading.RLock()
@@ -46,6 +55,11 @@ class ChiefAgent(BaseAgent):
 
         # Subscribe to broadcast events from the WorkPool
         self._messaging.subscribe("chief", self._on_message)
+
+        # Register with FleetManager if provided
+        if self._fleet_manager is not None:
+            self._fleet_manager.register("chief", ["planning", "orchestration"])
+            self._send_heartbeat(status="idle", load=0)
 
     def _on_message(self, message: Message) -> None:
         """Handle incoming events from the WorkPool."""
@@ -125,6 +139,14 @@ class ChiefAgent(BaseAgent):
             self._mission_result = {"success": True, "errors": []}
             self._completion_event.set()
 
+    def _send_heartbeat(self, status: str, load: int = 0) -> None:
+        """Send a heartbeat to the FleetManager if available."""
+        if self._fleet_manager is not None:
+            try:
+                self._fleet_manager.report_health("chief", {"status": status, "load": load})
+            except Exception:
+                pass  # Heartbeat failures must not break execution
+
     def run(self, shared_context: SharedContext) -> dict:
         """Execute a mission orchestration (blocks until completion)."""
         task = shared_context.get("task")
@@ -157,3 +179,126 @@ class ChiefAgent(BaseAgent):
 
         self._status = "completed" if self._mission_result["success"] else "failed"
         return self._mission_result
+
+    def execute_mission(
+        self,
+        graph: Any,
+        event_bus: Optional[Any] = None,
+    ) -> dict[str, Any]:
+        """Orchestrate execution of a ``MissionGraph`` through ``MissionExecutor``.
+
+        The ChiefAgent validates and dispatches the graph to the existing
+        ``MissionExecutor``, which owns the actual execution path
+        (MissionExecutor → AutonomousExecutor → Kernel → Tools).  An
+        optional ``MissionEventBus`` receives lifecycle events as missions
+        progress.
+
+        This method is additive — the existing ``run(ctx)`` WorkPool-based
+        pipeline continues to work unchanged.  ChiefAgent does NOT replace
+        or duplicate ``MissionExecutor`` execution logic.
+
+        Args:
+            graph: A ``MissionGraph`` of missions to execute.
+            event_bus: Optional ``MissionEventBus`` for lifecycle
+                notifications (MISSION_STARTED, MISSION_COMPLETED,
+                MISSION_FAILED).
+
+        Returns:
+            Dictionary with ``success``, ``results`` (per-mission dict),
+            ``executed`` count, ``skipped`` count, and ``errors`` list.
+        """
+        self._status = "running"
+        self._logger.info("chief executing mission graph", mission_count=len(graph))
+
+        # Validate graph via Planner (reuse existing planning logic)
+        try:
+            from brain.planner.planner import Planner
+            planner = Planner()
+            plan = planner.plan_missions(graph)
+        except ValueError as e:
+            self._logger.error("mission graph validation failed", error=str(e))
+            self._status = "failed"
+            return {"success": False, "errors": [str(e)], "executed": 0, "skipped": 0, "results": {}}
+
+        mission_count = len(plan)
+        self._logger.info("chief missions planned", plan_size=mission_count)
+
+        # Send heartbeat: mission execution starting
+        self._send_heartbeat(status="running", load=mission_count)
+
+        # Publish pre-execution events for each executable mission via
+        # the optional event bus so external observers can track progress.
+        if event_bus is not None and hasattr(event_bus, "publish"):
+            try:
+                from brain.mission.event import MissionEvent
+                from brain.mission.event_types import MissionEventType
+            except ImportError:
+                pass
+            else:
+                for mission in plan:
+                    event_bus.publish(MissionEvent(
+                        mission_id=str(mission.id),
+                        event_type=MissionEventType.MISSION_STATUS_CHANGED,
+                        payload={
+                            "old_status": mission.status.value,
+                            "new_status": "dispatched",
+                        },
+                    ))
+
+        # Delegate execution to MissionExecutor — ChiefAgent orchestrates,
+        # MissionExecutor executes.
+        try:
+            from brain.mission.mission_executor import MissionExecutor
+            executor = MissionExecutor()
+            result = executor.execute(graph)
+        except Exception as e:
+            self._logger.error("mission executor failed", error=str(e))
+            self._status = "failed"
+            return {"success": False, "errors": [str(e)], "executed": 0, "skipped": 0, "results": {}}
+
+        # Publish terminal events for each executed mission.
+        if event_bus is not None and hasattr(event_bus, "publish"):
+            try:
+                from brain.mission.event import MissionEvent
+                from brain.mission.event_types import MissionEventType
+            except ImportError:
+                pass
+            else:
+                for mission in plan:
+                    if mission.status.is_terminal():
+                        event_type = (
+                            MissionEventType.MISSION_COMPLETED
+                            if mission.status.value == "completed"
+                            else MissionEventType.MISSION_FAILED
+                        )
+                        event_bus.publish(MissionEvent(
+                            mission_id=str(mission.id),
+                            event_type=event_type,
+                            payload={"status": mission.status.value},
+                        ))
+
+        self._logger.info(
+            "chief mission execution complete",
+            success=result.get("success"),
+            executed=result.get("executed", 0),
+        )
+
+        errors = []
+        if not result.get("success"):
+            errors.append(result.get("error", "Mission execution failed"))
+
+        self._status = "completed" if result.get("success") else "failed"
+
+        # Send final heartbeat
+        self._send_heartbeat(
+            status=self._status,
+            load=0,
+        )
+
+        return {
+            "success": result.get("success", False),
+            "results": result.get("results", {}),
+            "executed": result.get("executed", 0),
+            "skipped": result.get("skipped", 0),
+            "errors": errors,
+        }
