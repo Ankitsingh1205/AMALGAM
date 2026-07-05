@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 from typing import Optional
 
@@ -14,13 +15,20 @@ class MissionEventBus:
     subscription order, isolates subscriber exceptions, and enforces
     strongly-typed event objects.
 
+    Event history is maintained in deterministic insertion order,
+    with an optional bounded capacity (oldest evicted first).
+
     This component belongs entirely to the Mission layer. It is
     independent from the Planner, Scheduler, Runtime, AutonomousExecutor,
     Tool System, and Memory System.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, history_limit: Optional[int] = None) -> None:
         self._subscribers: list[Callable[[MissionEvent], None]] = []
+        self._history: deque[MissionEvent] = deque()
+        self._history_limit: int | None = (
+            history_limit if history_limit and history_limit > 0 else None
+        )
 
     def subscribe(self, callback: Callable[[MissionEvent], None]) -> None:
         """Register a callback to receive future events.
@@ -56,6 +64,10 @@ class MissionEventBus:
         and does not prevent remaining subscribers from receiving the
         event.
 
+        Published events are appended to the history buffer. If a
+        history limit is configured the oldest event is evicted when
+        the limit is exceeded.
+
         Args:
             event: The typed ``MissionEvent`` to dispatch.
 
@@ -76,16 +88,34 @@ class MissionEventBus:
                 subscriber(event)
                 delivered += 1
             except Exception:
-                # Isolate subscriber failures — one failure must not
-                # stop propagation to remaining subscribers.
                 continue
+
+        self._record(event)
 
         return delivered
 
     def clear(self) -> None:
-        """Remove all subscribers."""
+        """Remove all subscribers and clear event history."""
         self._subscribers.clear()
+        self._history.clear()
 
     def subscriber_count(self) -> int:
         """Return the number of registered subscribers."""
         return len(self._subscribers)
+
+    def event_history(self) -> list[MissionEvent]:
+        """Return all recorded events in deterministic insertion order.
+
+        The returned list is a shallow copy — the caller may mutate it
+        without affecting the internal history buffer.
+
+        If a history limit is configured via the constructor the buffer
+        never exceeds that limit (oldest events are evicted first).
+        """
+        return list(self._history)
+
+    def _record(self, event: MissionEvent) -> None:
+        """Append *event* to the history buffer with optional FIFO eviction."""
+        if self._history_limit is not None and len(self._history) >= self._history_limit:
+            self._history.popleft()
+        self._history.append(event)
