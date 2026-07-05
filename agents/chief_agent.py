@@ -8,6 +8,7 @@ from agents.base_agent import BaseAgent
 from brain.dependency_resolver import DependencyResolver, CycleError
 from brain.fleet_manager import FleetManager
 from brain.messaging import Messaging, Message
+from brain.mission.mission_status import MissionStatus
 from brain.shared_context import SharedContext
 from brain.work_pool import WorkPool
 
@@ -37,6 +38,12 @@ class ChiefAgent(BaseAgent):
         messaging: Optional[Messaging] = None,
         fleet_manager: Optional[FleetManager] = None,
     ) -> None:
+        # Reuse the WorkPool's messaging bus when no explicit bus is
+        # provided.  The chief must listen on the same bus that the
+        # WorkPool broadcasts task_completed/task_failed events on,
+        # otherwise distributed dispatch will deadlock.
+        if messaging is None:
+            messaging = work_pool._messaging
         super().__init__("chief", shared_context, messaging)
         self._work_pool = work_pool
         self._resolver = dependency_resolver
@@ -52,6 +59,7 @@ class ChiefAgent(BaseAgent):
         self._planning_task_id: str = ""
         self._completed_tasks: set[str] = set()
         self._pending_tasks: dict[str, dict] = {}
+        self._task_results: dict[str, Any] = {}
 
         # Subscribe to broadcast events from the WorkPool
         self._messaging.subscribe("chief", self._on_message)
@@ -77,6 +85,7 @@ class ChiefAgent(BaseAgent):
                 self._handle_plan_completed(result)
             elif task_id in self._pending_tasks:
                 self._completed_tasks.add(task_id)
+                self._task_results[task_id] = result
                 del self._pending_tasks[task_id]
                 self._schedule_ready_tasks()
 
@@ -118,6 +127,11 @@ class ChiefAgent(BaseAgent):
 
     def _schedule_ready_tasks(self) -> None:
         """Submit tasks to the WorkPool whose dependencies have been satisfied."""
+        with self._lock:
+            self._schedule_ready_tasks_locked()
+
+    def _schedule_ready_tasks_locked(self) -> None:
+        """Inner variant of _schedule_ready_tasks — caller must hold ``_lock``."""
         to_submit = []
         for task_id, task in self._pending_tasks.items():
             if task.get("_sched_status") == "submitted":
@@ -135,9 +149,11 @@ class ChiefAgent(BaseAgent):
 
     def _check_mission_complete(self) -> None:
         """Trigger mission completion if all tasks have finished."""
-        if not self._pending_tasks and self._planning_task_id in self._completed_tasks:
-            self._mission_result = {"success": True, "errors": []}
-            self._completion_event.set()
+        if not self._pending_tasks:
+            # All pending tasks done. Check if planning phase is also done (or was skipped).
+            if not self._planning_task_id or self._planning_task_id in self._completed_tasks:
+                self._mission_result = {"success": True, "errors": []}
+                self._completion_event.set()
 
     def _send_heartbeat(self, status: str, load: int = 0) -> None:
         """Send a heartbeat to the FleetManager if available."""
@@ -184,24 +200,32 @@ class ChiefAgent(BaseAgent):
         self,
         graph: Any,
         event_bus: Optional[Any] = None,
+        timeout: float = 300.0,
+        force_sequential: bool = False,
     ) -> dict[str, Any]:
-        """Orchestrate execution of a ``MissionGraph`` through ``MissionExecutor``.
+        """Orchestrate execution of a ``MissionGraph``.
 
-        The ChiefAgent validates and dispatches the graph to the existing
-        ``MissionExecutor``, which owns the actual execution path
-        (MissionExecutor → AutonomousExecutor → Kernel → Tools).  An
-        optional ``MissionEventBus`` receives lifecycle events as missions
-        progress.
+        When a ``FleetManager`` is available, missions are submitted to the
+        ``WorkPool`` for distributed execution by agents that steal work
+        matching their capabilities.  When no fleet is present (or
+        ``force_sequential`` is ``True``), the graph is executed
+        sequentially via ``MissionExecutor``.
 
-        This method is additive — the existing ``run(ctx)`` WorkPool-based
-        pipeline continues to work unchanged.  ChiefAgent does NOT replace
-        or duplicate ``MissionExecutor`` execution logic.
+        In both paths ``MissionExecutor`` remains the execution owner;
+        ``ChiefAgent`` only validates, dispatches, and reports.
 
         Args:
             graph: A ``MissionGraph`` of missions to execute.
             event_bus: Optional ``MissionEventBus`` for lifecycle
                 notifications (MISSION_STARTED, MISSION_COMPLETED,
                 MISSION_FAILED).
+            timeout: Maximum seconds to wait for distributed execution
+                completion.  Ignored in the sequential path.  Defaults
+                to 300 seconds (5 minutes).
+            force_sequential: If ``True``, always use the sequential
+                path even when a ``FleetManager`` is attached.  Useful
+                for testing heartbeat behavior without distributed
+                dispatch.
 
         Returns:
             Dictionary with ``success``, ``results`` (per-mission dict),
@@ -245,16 +269,18 @@ class ChiefAgent(BaseAgent):
                         },
                     ))
 
-        # Delegate execution to MissionExecutor — ChiefAgent orchestrates,
-        # MissionExecutor executes.
-        try:
-            from brain.mission.mission_executor import MissionExecutor
-            executor = MissionExecutor()
-            result = executor.execute(graph)
-        except Exception as e:
-            self._logger.error("mission executor failed", error=str(e))
-            self._status = "failed"
-            return {"success": False, "errors": [str(e)], "executed": 0, "skipped": 0, "results": {}}
+        # Attach event bus to missions so external agents publish lifecycle
+        # events during distributed execution.
+        if event_bus is not None:
+            for mission in plan:
+                mission.event_bus = event_bus
+
+        if self._fleet_manager is None or force_sequential:
+            # Sequential fallback — no fleet available or forced.
+            result = self._execute_sequential(graph)
+        else:
+            # Distributed path — delegate ready missions to WorkPool.
+            result = self._execute_distributed(plan, graph, timeout=timeout)
 
         # Publish terminal events for each executed mission.
         if event_bus is not None and hasattr(event_bus, "publish"):
@@ -283,9 +309,20 @@ class ChiefAgent(BaseAgent):
             executed=result.get("executed", 0),
         )
 
-        errors = []
+        errors: list[str] = []
         if not result.get("success"):
-            errors.append(result.get("error", "Mission execution failed"))
+            # MissionExecutor may return "error" (str) or "errors" (list).
+            raw_errors = result.get("errors", [])
+            if raw_errors:
+                if isinstance(raw_errors, list):
+                    errors.extend(raw_errors)
+                else:
+                    errors.append(str(raw_errors))
+            single_error = result.get("error")
+            if single_error:
+                errors.append(str(single_error))
+            if not errors:
+                errors.append("Mission execution failed")
 
         self._status = "completed" if result.get("success") else "failed"
 
@@ -301,4 +338,127 @@ class ChiefAgent(BaseAgent):
             "executed": result.get("executed", 0),
             "skipped": result.get("skipped", 0),
             "errors": errors,
+        }
+
+    def _execute_sequential(self, graph: Any) -> dict[str, Any]:
+        """Execute a MissionGraph sequentially via MissionExecutor.
+
+        This is the fallback path when no ``FleetManager`` is available.
+        """
+        try:
+            from brain.mission.mission_executor import MissionExecutor
+            executor = MissionExecutor()
+            return executor.execute(graph)
+        except Exception as e:
+            self._logger.error("mission executor failed", error=str(e))
+            return {
+                "success": False,
+                "errors": [str(e)],
+                "executed": 0,
+                "skipped": 0,
+                "results": {},
+            }
+
+    def _execute_distributed(
+        self,
+        plan: list[Any],
+        graph: Any,
+        timeout: float = 300.0,
+    ) -> dict[str, Any]:
+        """Execute planned missions via the WorkPool.
+
+        Missions are converted to task dicts and submitted to the WorkPool.
+        Agents steal tasks by capability, execute via ``MissionExecutor``,
+        and report completion through the messaging bus.  Dependencies are
+        respected through the existing ``_schedule_ready_tasks`` gating.
+
+        A bounded ``timeout`` prevents indefinite hangs when no worker
+        picks up a task or a worker dies silently.  On timeout the
+        ChiefAgent reports a graceful failure rather than deadlocking.
+
+        Args:
+            plan: List of ``Mission`` objects to dispatch.
+            graph: The source ``MissionGraph`` — used for dependency
+                resolution since ``mission.dependencies`` is a separate
+                dataclass field from graph edges.
+            timeout: Maximum seconds to wait for completion.  Defaults
+                to 300 seconds (5 minutes) per Mission 7.1.6 graceful
+                shutdown requirements.
+
+        Returns:
+            Dictionary with ``success``, ``errors``, ``executed``,
+            ``skipped``, and ``results`` keys.
+        """
+        from brain.capability_router import CapabilityRouter
+
+        router = CapabilityRouter()
+
+        with self._lock:
+            self._completed_tasks.clear()
+            self._pending_tasks.clear()
+            self._task_results.clear()
+            self._mission_result = {"success": False, "errors": []}
+            self._completion_event.clear()
+            self._planning_task_id = ""  # No planning phase for direct dispatch
+
+            for mission in plan:
+                # Infer capability from mission content via existing router.
+                inferred = router.route(
+                    {"action": "execute_mission", "data": mission.description}
+                )
+                # Resolve dependencies from the graph, not the mission's
+                # ``dependencies`` dataclass field (which is populated by
+                # ``Mission.add_dependency()``, not ``MissionGraph.add_dependency()``).
+                dep_missions = graph.get_dependencies(mission)
+                depends_on = [str(d.id) for d in dep_missions]
+                task = {
+                    "id": str(mission.id),
+                    "action": "execute_mission",
+                    "data": mission,
+                    "depends_on": depends_on,
+                    "_sched_status": "waiting",
+                    "required_capability": inferred,
+                }
+                self._pending_tasks[str(mission.id)] = task
+
+            self._schedule_ready_tasks_locked()
+
+        # Bounded wait — graceful shutdown on timeout instead of deadlock.
+        completed = self._completion_event.wait(timeout=timeout)
+
+        if not completed:
+            # Timeout — report remaining pending tasks as failed.
+            with self._lock:
+                timed_out = list(self._pending_tasks.keys())
+                for tid in timed_out:
+                    self._pending_tasks.pop(tid, None)
+            self._logger.warning(
+                "distributed execution timed out",
+                timeout=timeout,
+                pending=timed_out,
+            )
+            return {
+                "success": False,
+                "errors": [f"Execution timed out after {timeout}s: {timed_out}"],
+                "executed": sum(1 for m in plan if m.status.is_terminal()),
+                "skipped": len(plan) - sum(1 for m in plan if m.status.is_terminal()),
+                "results": self._task_results,
+            }
+
+        executed = sum(
+            1 for m in plan if m.status.is_terminal()
+        )
+        skipped = len(plan) - executed
+        success = all(m.status == MissionStatus.COMPLETED for m in plan)
+        errors = [
+            m.error for m in plan
+            if m.status == MissionStatus.FAILED and m.error
+        ]
+
+        return {
+            "success": success,
+            "errors": errors,
+            "executed": executed,
+            "skipped": skipped,
+            "results": self._task_results,
         }

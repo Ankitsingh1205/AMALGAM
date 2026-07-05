@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from unittest.mock import patch
 
 import pytest
@@ -25,17 +26,6 @@ def _make_graph(*missions: Mission) -> MissionGraph:
     return graph
 
 
-class DummyThreadPool:
-    """Synchronous thread pool replacement for MissionExecutor tests."""
-    def submit(self, fn, *args, **kwargs):
-        class Future:
-            def result(self, timeout=None):
-                return fn(*args, **kwargs)
-        return Future()
-    def shutdown(self, wait=False):
-        pass
-
-
 # ---------------------------------------------------------------------------
 # Backward compatibility — existing run() unchanged
 # ---------------------------------------------------------------------------
@@ -53,7 +43,6 @@ class TestChiefAgentBackwardCompatibility:
         chief = ChiefAgent(pool, resolver, ctx, msg)
 
         def simulate_workers():
-            import time
             time.sleep(0.1)
             plan_task = pool.steal_task("planner_1", ["planner"])
             assert plan_task is not None
@@ -113,7 +102,197 @@ class TestChiefAgentFleetRegistration:
 
 
 # ---------------------------------------------------------------------------
-# Heartbeats during mission execution
+# Sequential fallback (no FleetManager)
+# ---------------------------------------------------------------------------
+
+
+class TestChiefAgentSequentialFallback:
+    def test_execute_mission_without_fleet_manager(self):
+        """Without FleetManager, execute_mission must use sequential path."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        # No fleet_manager
+        chief = ChiefAgent(pool, resolver)
+
+        graph = _make_graph(_make_ready_mission("A"))
+
+        with patch("brain.mission.mission_executor.MissionExecutor.execute",
+                   return_value={"success": True, "executed": 1, "skipped": 0, "results": {}}):
+            result = chief.execute_mission(graph)
+
+        assert result["success"] is True
+        assert result["executed"] == 1
+
+    def test_execute_mission_failure_sequential(self):
+        """Sequential path must report failures correctly."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        chief = ChiefAgent(pool, resolver)
+
+        graph = _make_graph(_make_ready_mission("A"))
+
+        with patch("brain.mission.mission_executor.MissionExecutor.execute",
+                   return_value={"success": False, "executed": 1, "skipped": 0,
+                                 "results": {}, "error": "crash"}):
+            result = chief.execute_mission(graph)
+
+        assert result["success"] is False
+        assert "crash" in result["errors"]
+
+
+# ---------------------------------------------------------------------------
+# Distributed execution with FleetManager
+# ---------------------------------------------------------------------------
+
+
+class TestChiefAgentDistributedExecution:
+    def test_distributed_single_mission(self):
+        """A single mission is dispatched to WorkPool and completed by an agent."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        m = _make_ready_mission("A")
+        graph = _make_graph(m)
+
+        def simulate_agent():
+            time.sleep(0.5)
+            task = pool.steal_task("agent_1", ["llm"])
+            assert task is not None, "No task available — race condition"
+            assert task["action"] == "execute_mission"
+            # Simulate execution: mark mission completed
+            mission = task["data"]
+            mission.transition(MissionStatus.RUNNING)
+            mission.transition(MissionStatus.VERIFYING)
+            mission.transition(MissionStatus.COMPLETED)
+            pool.complete_task(task["id"], result={"success": True})
+
+        t = threading.Thread(target=simulate_agent)
+        t.start()
+        result = chief.execute_mission(graph)
+        t.join(timeout=2.0)
+
+        assert result["success"] is True
+        assert result["executed"] == 1
+        assert m.status == MissionStatus.COMPLETED
+
+    def test_distributed_dependency_ordering(self):
+        """Missions with dependencies are gated until prerequisites complete."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        a = _make_ready_mission("A")
+        b = _make_ready_mission("B")
+        graph = _make_graph(a, b)
+        graph.add_dependency(a, b)
+
+        execution_order: list[str] = []
+
+        def simulate_agent():
+            time.sleep(0.5)
+            # Only A should be available initially
+            task1 = pool.steal_task("agent_1", ["llm"])
+            assert task1 is not None, "No task1 available — race condition"
+            execution_order.append(task1["data"].title)
+            task1["data"].transition(MissionStatus.RUNNING)
+            task1["data"].transition(MissionStatus.VERIFYING)
+            task1["data"].transition(MissionStatus.COMPLETED)
+            pool.complete_task(task1["id"], result={"success": True})
+
+            time.sleep(0.1)
+            # Now B should be available
+            task2 = pool.steal_task("agent_1", ["llm"])
+            assert task2 is not None, "No task2 available — dependency gate failed"
+            execution_order.append(task2["data"].title)
+            task2["data"].transition(MissionStatus.RUNNING)
+            task2["data"].transition(MissionStatus.VERIFYING)
+            task2["data"].transition(MissionStatus.COMPLETED)
+            pool.complete_task(task2["id"], result={"success": True})
+
+        t = threading.Thread(target=simulate_agent)
+        t.start()
+        result = chief.execute_mission(graph)
+        t.join(timeout=2.0)
+
+        assert result["success"] is True
+        assert execution_order == ["A", "B"]
+        assert a.status == MissionStatus.COMPLETED
+        assert b.status == MissionStatus.COMPLETED
+
+    def test_distributed_failure_handling(self):
+        """When a mission fails, execution reports failure."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        m = _make_ready_mission("A")
+        graph = _make_graph(m)
+
+        def simulate_agent():
+            time.sleep(0.5)
+            task = pool.steal_task("agent_1", ["llm"])
+            assert task is not None, "No task available — race condition"
+            mission = task["data"]
+            mission.transition(MissionStatus.RUNNING)
+            mission.transition(MissionStatus.FAILED)
+            pool.fail_task(task["id"], error="execution failed")
+
+        t = threading.Thread(target=simulate_agent)
+        t.start()
+        result = chief.execute_mission(graph)
+        t.join(timeout=2.0)
+
+        assert result["success"] is False
+        assert m.status == MissionStatus.FAILED
+
+    def test_distributed_multiple_missions(self):
+        """Multiple independent missions are all executed."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        a = _make_ready_mission("A")
+        b = _make_ready_mission("B")
+        c = _make_ready_mission("C")
+        graph = _make_graph(a, b, c)
+
+        completed: set[str] = set()
+
+        def simulate_agent():
+            for _ in range(3):
+                time.sleep(0.1)
+                task = pool.steal_task("agent_1", ["llm"])
+                if task is None:
+                    break
+                mission = task["data"]
+                mission.transition(MissionStatus.RUNNING)
+                mission.transition(MissionStatus.VERIFYING)
+                mission.transition(MissionStatus.COMPLETED)
+                completed.add(mission.title)
+                pool.complete_task(task["id"], result={"success": True})
+
+        t = threading.Thread(target=simulate_agent)
+        t.start()
+        result = chief.execute_mission(graph)
+        t.join(timeout=2.0)
+
+        assert result["success"] is True
+        assert completed == {"A", "B", "C"}
+
+
+# ---------------------------------------------------------------------------
+# Heartbeats during mission execution (via sequential path with FleetManager)
 # ---------------------------------------------------------------------------
 
 
@@ -129,7 +308,7 @@ class TestChiefAgentHeartbeats:
 
         with patch("brain.mission.mission_executor.MissionExecutor.execute",
                    return_value={"success": True, "executed": 1, "skipped": 0, "results": {}}):
-            chief.execute_mission(graph)
+            chief.execute_mission(graph, force_sequential=True)
 
         # Check that heartbeats were sent
         state = fm.get_agent_state("chief")
@@ -149,7 +328,7 @@ class TestChiefAgentHeartbeats:
         with patch("brain.mission.mission_executor.MissionExecutor.execute",
                    return_value={"success": False, "executed": 1, "skipped": 0,
                                  "results": {}, "error": "Task failed"}):
-            result = chief.execute_mission(graph)
+            result = chief.execute_mission(graph, force_sequential=True)
 
         assert result["success"] is False
         state = fm.get_agent_state("chief")
@@ -167,76 +346,12 @@ class TestChiefAgentHeartbeats:
 
         with patch("brain.mission.mission_executor.MissionExecutor.execute",
                    return_value={"success": True, "executed": 2, "skipped": 0, "results": {}}):
-            chief.execute_mission(graph)
+            chief.execute_mission(graph, force_sequential=True)
 
         state = fm.get_agent_state("chief")
         assert state is not None
         # load should be mission_count at start, 0 at end
         assert state["load"] == 0
-
-
-# ---------------------------------------------------------------------------
-# Mission execution with FleetManager
-# ---------------------------------------------------------------------------
-
-
-class TestChiefAgentMissionExecution:
-    def test_single_mission_completes(self):
-        msg = Messaging()
-        pool = WorkPool(msg)
-        resolver = DependencyResolver()
-        fm = FleetManager(msg)
-        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
-
-        graph = _make_graph(_make_ready_mission("A"))
-
-        with patch("brain.mission.mission_executor.MissionExecutor.execute",
-                   return_value={"success": True, "executed": 1, "skipped": 0, "results": {}}):
-            result = chief.execute_mission(graph)
-
-        assert result["success"] is True
-        assert result["executed"] == 1
-        state = fm.get_agent_state("chief")
-        assert state["status"] == "completed"
-
-    def test_multiple_missions_execute(self):
-        msg = Messaging()
-        pool = WorkPool(msg)
-        resolver = DependencyResolver()
-        fm = FleetManager(msg)
-        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
-
-        a = _make_ready_mission("A")
-        b = _make_ready_mission("B")
-        c = _make_ready_mission("C")
-        graph = _make_graph(a, b, c)
-
-        with patch("brain.mission.mission_executor.MissionExecutor.execute",
-                   return_value={"success": True, "executed": 3, "skipped": 0, "results": {}}):
-            result = chief.execute_mission(graph)
-
-        assert result["success"] is True
-        assert result["executed"] == 3
-        state = fm.get_agent_state("chief")
-        assert state["status"] == "completed"
-
-    def test_execute_mission_failure_updates_fleet(self):
-        msg = Messaging()
-        pool = WorkPool(msg)
-        resolver = DependencyResolver()
-        fm = FleetManager(msg)
-        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
-
-        graph = _make_graph(_make_ready_mission("A"))
-
-        with patch("brain.mission.mission_executor.MissionExecutor.execute",
-                   return_value={"success": False, "executed": 1, "skipped": 0,
-                                 "results": {}, "error": "crash"}):
-            result = chief.execute_mission(graph)
-
-        assert result["success"] is False
-        state = fm.get_agent_state("chief")
-        assert state["status"] == "failed"
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +405,7 @@ class TestExecuteMissionResultStructure:
 
         with patch("brain.mission.mission_executor.MissionExecutor.execute",
                    return_value={"success": True, "executed": 1, "skipped": 0, "results": {}}):
-            result = chief.execute_mission(graph)
+            result = chief.execute_mission(graph, force_sequential=True)
 
         for key in ("success", "results", "executed", "skipped", "errors"):
             assert key in result, f"Missing key: {key}"
@@ -306,7 +421,7 @@ class TestExecuteMissionResultStructure:
 
         with patch("brain.mission.mission_executor.MissionExecutor.execute",
                    return_value={"success": True, "executed": 0, "skipped": 0, "results": {}}):
-            result = chief.execute_mission(graph)
+            result = chief.execute_mission(graph, force_sequential=True)
 
         assert result["executed"] == 0
         assert result["success"] is True
