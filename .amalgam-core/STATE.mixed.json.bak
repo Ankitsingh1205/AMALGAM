@@ -1,0 +1,685 @@
+{
+  "$id": "https://amalgam/.amalgam-core/STATE.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "description": "Single source of truth for AMALGAM runtime state. Maintained by the kernel and updated atomically after every stage transition.",
+  "properties": {
+    "architecture_version": {
+      "description": "Version of the architecture definition this state is compatible with. Bumped on layer, ownership, or dependency-direction changes.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "checkpoint": {
+      "additionalProperties": false,
+      "description": "Last persisted checkpoint. Used for resumption after interruption.",
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "by": {
+          "additionalProperties": false,
+          "properties": {
+            "agent": {
+              "type": "string"
+            },
+            "worker": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "worker"
+          ],
+          "type": "object"
+        },
+        "note": {
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "stage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "at",
+        "by"
+      ],
+      "type": "object"
+    },
+    "completed_missions": {
+      "description": "Ordered list of missions that have reached status completed.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^MISSION_\\d+_\\d+$",
+            "type": "string"
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "completed_at"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "current_branch": {
+      "description": "Name of the git branch currently checked out.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "current_mission": {
+      "description": "Mission currently in progress, or null if no mission is active.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^MISSION_\\d+_\\d+$",
+              "type": "string"
+            },
+            "spec_path": {
+              "type": "string"
+            },
+            "started_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "status": {
+              "const": "in_progress",
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "status",
+            "started_at"
+          ],
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "current_stage": {
+      "description": "Workflow stage currently active for the current task.",
+      "enum": [
+        "understand",
+        "plan",
+        "implement",
+        "verify",
+        "test",
+        "review",
+        "report",
+        "idle"
+      ],
+      "type": "string"
+    },
+    "current_task": {
+      "description": "Task currently being executed within the current mission, or null.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "mission_id": {
+              "pattern": "^MISSION_\\d+_\\d+$",
+              "type": "string"
+            },
+            "started_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "mission_id",
+            "title",
+            "started_at"
+          ],
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "current_worker": {
+      "additionalProperties": false,
+      "description": "Agent currently performing work in this session.",
+      "properties": {
+        "agent": {
+          "enum": [
+            "OpenCode",
+            "ClaudeCode",
+            "Continue",
+            "Kimi",
+            "Codex",
+            "GeminiCLI",
+            "Cursor",
+            "Cline",
+            "RooCode",
+            "Manual",
+            "Unknown"
+          ],
+          "type": "string"
+        },
+        "host": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "pid": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "agent",
+        "host"
+      ],
+      "type": "object"
+    },
+    "last_updated": {
+      "description": "ISO-8601 UTC timestamp of the most recent mutation of STATE.json.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "model": {
+      "additionalProperties": false,
+      "description": "Model currently servicing the session.",
+      "properties": {
+        "context_window": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "planner",
+            "engineer",
+            "reviewer",
+            "researcher",
+            "orchestrator",
+            "default"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "context_window"
+      ],
+      "type": "object"
+    },
+    "next_mission": {
+      "description": "Mission queued to begin after current_mission completes, or null.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "pattern": "^MISSION_\\d+_\\d+$",
+              "type": "string"
+            },
+            "spec_path": {
+              "type": "string"
+            },
+            "title": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ],
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "project": {
+      "additionalProperties": false,
+      "description": "Canonical project identity.",
+      "properties": {
+        "language": {
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "const": "Python",
+              "type": "string"
+            }
+          },
+          "required": [
+            "primary"
+          ],
+          "type": "object"
+        },
+        "name": {
+          "const": "AMALGAM",
+          "type": "string"
+        },
+        "primary_branch": {
+          "default": "main",
+          "type": "string"
+        },
+        "root": {
+          "const": "C:\\AMALGAM",
+          "type": "string"
+        },
+        "type": {
+          "const": "Artificial Intelligence Operating System",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "language",
+        "root",
+        "primary_branch"
+      ],
+      "type": "object"
+    },
+    "provider": {
+      "additionalProperties": false,
+      "description": "LLM provider currently servicing the session.",
+      "properties": {
+        "api_base": {
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "rate_limit": {
+          "additionalProperties": false,
+          "properties": {
+            "max_concurrent": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "requests_per_minute": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "requests_per_minute",
+            "max_concurrent"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "api_base",
+        "rate_limit"
+      ],
+      "type": "object"
+    },
+    "queue": {
+      "description": "Ordered pending work items. Each item is a stage or task to execute when its turn comes.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "added_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "mission",
+              "task",
+              "stage",
+              "checkpoint",
+              "retest",
+              "replan",
+              "escalation"
+            ],
+            "type": "string"
+          },
+          "mission_id": {
+            "pattern": "^MISSION_\\d+_\\d+$",
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "priority": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stage": {
+            "enum": [
+              "understand",
+              "plan",
+              "implement",
+              "verify",
+              "test",
+              "review",
+              "report"
+            ],
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "priority"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "recent_commit": {
+      "additionalProperties": false,
+      "description": "Most recent commit applied to the repository. Mirrored from repository.head for fast access; may be a different commit if HEAD moved since session start.",
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "sha": {
+          "pattern": "^[0-9a-f]{7,40}$",
+          "type": "string"
+        },
+        "subject": {
+          "maxLength": 200,
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha",
+        "subject",
+        "at"
+      ],
+      "type": "object"
+    },
+    "repository": {
+      "additionalProperties": false,
+      "description": "Live repository state snapshot. Read-only; refreshed from git at every checkpoint.",
+      "properties": {
+        "head": {
+          "additionalProperties": false,
+          "properties": {
+            "author": {
+              "additionalProperties": false,
+              "properties": {
+                "email": {
+                  "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "email"
+              ],
+              "type": "object"
+            },
+            "authored_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "commit_sha": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            "message_subject": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "short_sha": {
+              "pattern": "^[0-9a-f]{7,40}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "commit_sha",
+            "short_sha",
+            "author",
+            "message_subject"
+          ],
+          "type": "object"
+        },
+        "is_git_repo": {
+          "type": "boolean"
+        },
+        "remotes": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "url": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "url"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "status": {
+          "additionalProperties": false,
+          "properties": {
+            "clean": {
+              "type": "boolean"
+            },
+            "staged": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "unstaged": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "untracked": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "clean",
+            "staged",
+            "unstaged",
+            "untracked"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "is_git_repo",
+        "head",
+        "status",
+        "remotes"
+      ],
+      "type": "object"
+    },
+    "repository_version": {
+      "description": "Monotonically increasing counter of structural repository changes committed since project inception. Independent of git history.",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schema_version": {
+      "description": "Version of the STATE.json schema. Semver. Incremented when this schema changes.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    },
+    "session_id": {
+      "description": "Unique identifier for the current operating session. UUIDv4.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "task_status": {
+      "description": "Lifecycle status of current_task.",
+      "enum": [
+        "pending",
+        "in_progress",
+        "blocked",
+        "verifying",
+        "failed",
+        "completed",
+        "abandoned"
+      ],
+      "type": "string"
+    },
+    "tests": {
+      "additionalProperties": false,
+      "description": "Last known test suite result for the repository.",
+      "properties": {
+        "command": {
+          "default": "py -m pytest",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "errors": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "failed": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "passed": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "run_at": {
+          "oneOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skipped": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "passing",
+            "failing",
+            "not_run"
+          ],
+          "type": "string"
+        },
+        "total": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "passed",
+        "failed",
+        "errors",
+        "skipped",
+        "total",
+        "duration_seconds",
+        "run_at",
+        "status"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "project",
+    "repository",
+    "current_branch",
+    "current_mission",
+    "completed_missions",
+    "current_task",
+    "task_status",
+    "current_stage",
+    "provider",
+    "model",
+    "session_id",
+    "checkpoint",
+    "recent_commit",
+    "tests",
+    "current_worker",
+    "next_mission",
+    "queue",
+    "architecture_version",
+    "repository_version",
+    "last_updated"
+  ],
+  "title": "AMALGAM Core State",
+  "type": "object",
+  "checkpoint": {
+    "sequence": 1,
+    "stage": "idle",
+    "at": "2026-07-05T23:25:30.288003+00:00",
+    "by": {
+      "worker": "context_engine"
+    }
+  },
+  "last_updated": "2026-07-05T23:25:34.526396+00:00",
+  "current_stage": "idle"
+}

@@ -1,0 +1,2642 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-07-06T00:56:52.534122+00:00",
+  "components": {
+    "agents": [
+      {
+        "name": "agents",
+        "path": "agents",
+        "category": "agents",
+        "public_modules": [
+          "agents.base_agent",
+          "agents.chief_agent",
+          "agents.engineer",
+          "agents.orchestrator_agent",
+          "agents.planner_agent",
+          "agents.research_agent",
+          "agents.reviewer_agent"
+        ],
+        "dependencies": [],
+        "children": [
+          "base_agent.py",
+          "chief_agent.py",
+          "engineer.py",
+          "orchestrator_agent.py",
+          "planner_agent.py",
+          "research_agent.py",
+          "reviewer_agent.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-07-01T17:51:59.402966+00:00"
+      },
+      {
+        "name": "base_agent",
+        "path": "agents/base_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "brain.agent_context",
+          "brain.messaging",
+          "brain.shared_context",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-01T09:08:12.175578+00:00"
+      },
+      {
+        "name": "chief_agent",
+        "path": "agents/chief_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "brain.capability_router",
+          "brain.dependency_resolver",
+          "brain.fleet_manager",
+          "brain.messaging",
+          "brain.mission.event",
+          "brain.mission.event_types",
+          "brain.mission.mission",
+          "brain.mission.mission_executor",
+          "brain.mission.mission_status",
+          "brain.mission.persistence",
+          "brain.planner.planner",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-05T21:14:39.027700+00:00"
+      },
+      {
+        "name": "engineer",
+        "path": "agents/engineer.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "brain.executor.autonomous_executor",
+          "brain.goal.goal",
+          "config",
+          "services.project_service",
+          "tools.file_tool",
+          "tools.python_executor"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-02T10:08:31.064551+00:00"
+      },
+      {
+        "name": "orchestrator_agent",
+        "path": "agents/orchestrator_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "agents.engineer",
+          "agents.planner_agent",
+          "agents.research_agent",
+          "agents.reviewer_agent",
+          "brain.agent_registry",
+          "brain.messaging",
+          "brain.scheduler",
+          "brain.shared_context",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-01T09:45:03.413024+00:00"
+      },
+      {
+        "name": "planner_agent",
+        "path": "agents/planner_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "brain.goal.goal",
+          "brain.mission",
+          "brain.planner.planner",
+          "brain.shared_context",
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-02T22:21:29.463996+00:00"
+      },
+      {
+        "name": "research_agent",
+        "path": "agents/research_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "brain.shared_context",
+          "services.logger",
+          "services.memory",
+          "services.project_service",
+          "tools.file_tool"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-01T09:11:18.331971+00:00"
+      },
+      {
+        "name": "reviewer_agent",
+        "path": "agents/reviewer_agent.py",
+        "category": "agents",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "brain.shared_context",
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "agents",
+        "last_modified": "2026-07-01T09:40:13.018387+00:00"
+      }
+    ],
+    "brain": [
+      {
+        "name": "brain",
+        "path": "brain",
+        "category": "brain",
+        "public_modules": [
+          "brain.agent_context",
+          "brain.agent_registry",
+          "brain.brain",
+          "brain.capability_router",
+          "brain.constants",
+          "brain.dependency_resolver",
+          "brain.evaluator",
+          "brain.executor",
+          "brain.fleet_manager",
+          "brain.goal",
+          "brain.intent",
+          "brain.knowledge_router",
+          "brain.memory",
+          "brain.messaging",
+          "brain.mission",
+          "brain.orchestrator",
+          "brain.pipeline",
+          "brain.planner",
+          "brain.preprocessor",
+          "brain.queue",
+          "brain.reflection",
+          "brain.retry",
+          "brain.router",
+          "brain.scheduler",
+          "brain.session",
+          "brain.shared_context",
+          "brain.tools",
+          "brain.work_pool"
+        ],
+        "dependencies": [],
+        "children": [
+          "agent_context.py",
+          "agent_registry.py",
+          "brain.py",
+          "capability_router.py",
+          "constants.py",
+          "dependency_resolver.py",
+          "evaluator",
+          "executor",
+          "fleet_manager.py",
+          "goal",
+          "intent",
+          "knowledge_router.py",
+          "memory",
+          "messaging.py",
+          "mission",
+          "orchestrator.py",
+          "pipeline",
+          "planner",
+          "preprocessor",
+          "queue",
+          "reflection",
+          "retry",
+          "router.py",
+          "scheduler.py",
+          "session.py",
+          "shared_context.py",
+          "tools",
+          "work_pool.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-07-02T11:13:13.376554+00:00"
+      },
+      {
+        "name": "agent_context",
+        "path": "brain/agent_context.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T09:05:47.086584+00:00"
+      },
+      {
+        "name": "agent_registry",
+        "path": "brain/agent_registry.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T09:08:12.175578+00:00"
+      },
+      {
+        "name": "brain",
+        "path": "brain/brain.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.intent.intent",
+          "brain.planner.planner"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-06-27T15:26:01.494408+00:00"
+      },
+      {
+        "name": "capability_router",
+        "path": "brain/capability_router.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.fleet_manager"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T15:12:56.165185+00:00"
+      },
+      {
+        "name": "constants",
+        "path": "brain/constants.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T14:53:38.504646+00:00"
+      },
+      {
+        "name": "dependency_resolver",
+        "path": "brain/dependency_resolver.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T12:05:56.542399+00:00"
+      },
+      {
+        "name": "evaluator",
+        "path": "brain/evaluator",
+        "category": "brain",
+        "public_modules": [
+          "brain.evaluator.evaluator"
+        ],
+        "dependencies": [],
+        "children": [
+          "evaluator.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T17:51:41.929910+00:00"
+      },
+      {
+        "name": "evaluator",
+        "path": "brain/evaluator/evaluator.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.evaluator",
+        "last_modified": "2026-06-30T17:53:14.764473+00:00"
+      },
+      {
+        "name": "executor",
+        "path": "brain/executor",
+        "category": "brain",
+        "public_modules": [
+          "brain.executor.autonomous_executor"
+        ],
+        "dependencies": [],
+        "children": [
+          "autonomous_executor.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T17:52:01.086848+00:00"
+      },
+      {
+        "name": "autonomous_executor",
+        "path": "brain/executor/autonomous_executor.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.evaluator.evaluator",
+          "brain.goal.goal",
+          "brain.memory.execution_memory",
+          "brain.queue.task_queue",
+          "brain.reflection.reflection_engine",
+          "brain.retry.retry_manager",
+          "config",
+          "kernel.executor",
+          "kernel.task",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.executor",
+        "last_modified": "2026-07-03T16:14:03.774199+00:00"
+      },
+      {
+        "name": "fleet_manager",
+        "path": "brain/fleet_manager.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.messaging",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T12:06:17.297454+00:00"
+      },
+      {
+        "name": "goal",
+        "path": "brain/goal",
+        "category": "brain",
+        "public_modules": [
+          "brain.goal.goal"
+        ],
+        "dependencies": [],
+        "children": [
+          "goal.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T15:14:05.517086+00:00"
+      },
+      {
+        "name": "goal",
+        "path": "brain/goal/goal.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "brain.goal",
+        "last_modified": "2026-07-01T15:14:05.512391+00:00"
+      },
+      {
+        "name": "intent",
+        "path": "brain/intent",
+        "category": "brain",
+        "public_modules": [
+          "brain.intent.intent"
+        ],
+        "dependencies": [],
+        "children": [
+          "intent.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T15:12:56.171473+00:00"
+      },
+      {
+        "name": "intent",
+        "path": "brain/intent/intent.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "brain.intent",
+        "last_modified": "2026-07-01T15:12:56.171473+00:00"
+      },
+      {
+        "name": "knowledge_router",
+        "path": "brain/knowledge_router.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.shared_context",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T12:06:56.669565+00:00"
+      },
+      {
+        "name": "memory",
+        "path": "brain/memory",
+        "category": "brain",
+        "public_modules": [
+          "brain.memory.execution_memory"
+        ],
+        "dependencies": [],
+        "children": [
+          "execution_memory.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T17:51:41.970880+00:00"
+      },
+      {
+        "name": "execution_memory",
+        "path": "brain/memory/execution_memory.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "services.logger",
+          "services.memory"
+        ],
+        "children": [],
+        "parent_package": "brain.memory",
+        "last_modified": "2026-06-30T19:10:23.058330+00:00"
+      },
+      {
+        "name": "messaging",
+        "path": "brain/messaging.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T10:16:05.474280+00:00"
+      },
+      {
+        "name": "mission",
+        "path": "brain/mission",
+        "category": "brain",
+        "public_modules": [
+          "brain.mission.epic",
+          "brain.mission.event",
+          "brain.mission.event_bus",
+          "brain.mission.event_types",
+          "brain.mission.graph",
+          "brain.mission.mission",
+          "brain.mission.mission_executor",
+          "brain.mission.mission_id",
+          "brain.mission.mission_priority",
+          "brain.mission.mission_status",
+          "brain.mission.persistence"
+        ],
+        "dependencies": [],
+        "children": [
+          "epic.py",
+          "event.py",
+          "event_bus.py",
+          "event_types.py",
+          "graph.py",
+          "mission.py",
+          "mission_executor.py",
+          "mission_id.py",
+          "mission_priority.py",
+          "mission_status.py",
+          "persistence.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-07-03T13:58:00.291764+00:00"
+      },
+      {
+        "name": "epic",
+        "path": "brain/mission/epic.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.mission",
+          "brain.mission.mission_id"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T11:41:49.139224+00:00"
+      },
+      {
+        "name": "event",
+        "path": "brain/mission/event.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.event_types"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T19:26:54.310644+00:00"
+      },
+      {
+        "name": "event_bus",
+        "path": "brain/mission/event_bus.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.event"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-05T17:59:40.407029+00:00"
+      },
+      {
+        "name": "event_types",
+        "path": "brain/mission/event_types.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-05T17:56:52.112996+00:00"
+      },
+      {
+        "name": "graph",
+        "path": "brain/mission/graph.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.mission",
+          "brain.mission.mission_id"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T12:05:27.118624+00:00"
+      },
+      {
+        "name": "mission",
+        "path": "brain/mission/mission.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.event",
+          "brain.mission.event_types",
+          "brain.mission.mission_id",
+          "brain.mission.mission_priority",
+          "brain.mission.mission_status"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-03T14:47:41.525747+00:00"
+      },
+      {
+        "name": "mission_executor",
+        "path": "brain/mission/mission_executor.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.executor.autonomous_executor",
+          "brain.mission.event",
+          "brain.mission.event_types",
+          "brain.mission.graph",
+          "brain.mission.mission",
+          "brain.mission.mission_status",
+          "brain.planner.planner",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-05T21:14:39.027700+00:00"
+      },
+      {
+        "name": "mission_id",
+        "path": "brain/mission/mission_id.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T11:22:50.269249+00:00"
+      },
+      {
+        "name": "mission_priority",
+        "path": "brain/mission/mission_priority.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T11:18:23.966965+00:00"
+      },
+      {
+        "name": "mission_status",
+        "path": "brain/mission/mission_status.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T11:18:06.267211+00:00"
+      },
+      {
+        "name": "persistence",
+        "path": "brain/mission/persistence.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.epic",
+          "brain.mission.graph",
+          "brain.mission.mission"
+        ],
+        "children": [],
+        "parent_package": "brain.mission",
+        "last_modified": "2026-07-02T16:13:15.600686+00:00"
+      },
+      {
+        "name": "orchestrator",
+        "path": "brain/orchestrator.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.router",
+          "config",
+          "services.llm",
+          "services.memory"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-06-29T04:20:09.558124+00:00"
+      },
+      {
+        "name": "pipeline",
+        "path": "brain/pipeline",
+        "category": "brain",
+        "public_modules": [
+          "brain.pipeline.pipeline"
+        ],
+        "dependencies": [],
+        "children": [
+          "pipeline.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T06:48:51.741058+00:00"
+      },
+      {
+        "name": "pipeline",
+        "path": "brain/pipeline/pipeline.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.preprocessor.preprocessor"
+        ],
+        "children": [],
+        "parent_package": "brain.pipeline",
+        "last_modified": "2026-06-27T14:41:07.926094+00:00"
+      },
+      {
+        "name": "planner",
+        "path": "brain/planner",
+        "category": "brain",
+        "public_modules": [
+          "brain.planner.planner"
+        ],
+        "dependencies": [],
+        "children": [
+          "planner.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T06:48:51.754421+00:00"
+      },
+      {
+        "name": "planner",
+        "path": "brain/planner/planner.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission",
+          "config",
+          "kernel.task",
+          "models.registry"
+        ],
+        "children": [],
+        "parent_package": "brain.planner",
+        "last_modified": "2026-07-02T15:44:33.112818+00:00"
+      },
+      {
+        "name": "preprocessor",
+        "path": "brain/preprocessor",
+        "category": "brain",
+        "public_modules": [
+          "brain.preprocessor.preprocessor"
+        ],
+        "dependencies": [],
+        "children": [
+          "preprocessor.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T06:48:51.769916+00:00"
+      },
+      {
+        "name": "preprocessor",
+        "path": "brain/preprocessor/preprocessor.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain.preprocessor",
+        "last_modified": "2026-06-27T14:41:07.946075+00:00"
+      },
+      {
+        "name": "queue",
+        "path": "brain/queue",
+        "category": "brain",
+        "public_modules": [
+          "brain.queue.task_queue"
+        ],
+        "dependencies": [],
+        "children": [
+          "task_queue.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T17:51:41.886878+00:00"
+      },
+      {
+        "name": "task_queue",
+        "path": "brain/queue/task_queue.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.queue",
+        "last_modified": "2026-07-01T10:17:15.112720+00:00"
+      },
+      {
+        "name": "reflection",
+        "path": "brain/reflection",
+        "category": "brain",
+        "public_modules": [
+          "brain.reflection.reflection_engine"
+        ],
+        "dependencies": [],
+        "children": [
+          "reflection_engine.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T17:51:41.949538+00:00"
+      },
+      {
+        "name": "reflection_engine",
+        "path": "brain/reflection/reflection_engine.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.reflection",
+        "last_modified": "2026-06-30T19:11:52.839478+00:00"
+      },
+      {
+        "name": "retry",
+        "path": "brain/retry",
+        "category": "brain",
+        "public_modules": [
+          "brain.retry.retry_manager"
+        ],
+        "dependencies": [],
+        "children": [
+          "retry_manager.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T17:51:41.959688+00:00"
+      },
+      {
+        "name": "retry_manager",
+        "path": "brain/retry/retry_manager.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain.retry",
+        "last_modified": "2026-06-30T17:40:41.644106+00:00"
+      },
+      {
+        "name": "router",
+        "path": "brain/router.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T10:18:09.498455+00:00"
+      },
+      {
+        "name": "scheduler",
+        "path": "brain/scheduler.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.agent_registry",
+          "brain.messaging",
+          "brain.shared_context",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T10:16:39.099269+00:00"
+      },
+      {
+        "name": "session",
+        "path": "brain/session.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-06-27T14:41:07.891075+00:00"
+      },
+      {
+        "name": "shared_context",
+        "path": "brain/shared_context.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T10:15:32.738132+00:00"
+      },
+      {
+        "name": "tools",
+        "path": "brain/tools",
+        "category": "brain",
+        "public_modules": [
+          "brain.tools.tool_router"
+        ],
+        "dependencies": [],
+        "children": [
+          "tool_router.py"
+        ],
+        "parent_package": "brain",
+        "last_modified": "2026-06-30T06:48:51.781987+00:00"
+      },
+      {
+        "name": "tool_router",
+        "path": "brain/tools/tool_router.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "brain.tools",
+        "last_modified": "2026-07-01T10:24:52.922059+00:00"
+      },
+      {
+        "name": "work_pool",
+        "path": "brain/work_pool.py",
+        "category": "brain",
+        "public_modules": [],
+        "dependencies": [
+          "brain.messaging",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "brain",
+        "last_modified": "2026-07-01T12:06:41.056054+00:00"
+      }
+    ],
+    "kernel": [
+      {
+        "name": "kernel",
+        "path": "kernel",
+        "category": "kernel",
+        "public_modules": [
+          "kernel.action_registry",
+          "kernel.dispatcher",
+          "kernel.event_bus",
+          "kernel.executor",
+          "kernel.permissions",
+          "kernel.scheduler",
+          "kernel.state",
+          "kernel.task"
+        ],
+        "dependencies": [],
+        "children": [
+          "action_registry.py",
+          "dispatcher.py",
+          "event_bus.py",
+          "executor.py",
+          "permissions.py",
+          "scheduler.py",
+          "state.py",
+          "task.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-06-30T06:48:51.916290+00:00"
+      },
+      {
+        "name": "action_registry",
+        "path": "kernel/action_registry.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-29T06:18:44.718817+00:00"
+      },
+      {
+        "name": "dispatcher",
+        "path": "kernel/dispatcher.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "kernel.action_registry",
+          "services.logger",
+          "services.service_registry",
+          "tools.tool_registry"
+        ],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-07-01T10:17:46.864353+00:00"
+      },
+      {
+        "name": "event_bus",
+        "path": "kernel/event_bus.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-27T14:34:14.855681+00:00"
+      },
+      {
+        "name": "executor",
+        "path": "kernel/executor.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "config.version",
+          "kernel.dispatcher",
+          "kernel.state",
+          "kernel.task",
+          "models.registry",
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-29T04:19:51.306980+00:00"
+      },
+      {
+        "name": "permissions",
+        "path": "kernel/permissions.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-27T14:34:14.853680+00:00"
+      },
+      {
+        "name": "scheduler",
+        "path": "kernel/scheduler.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-27T14:34:14.851701+00:00"
+      },
+      {
+        "name": "state",
+        "path": "kernel/state.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-29T04:17:55.832250+00:00"
+      },
+      {
+        "name": "task",
+        "path": "kernel/task.py",
+        "category": "kernel",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "kernel",
+        "last_modified": "2026-06-29T05:01:44.083577+00:00"
+      }
+    ],
+    "services": [
+      {
+        "name": "services",
+        "path": "services",
+        "category": "services",
+        "public_modules": [
+          "services.diagnostics",
+          "services.internet",
+          "services.knowledge",
+          "services.llm",
+          "services.logger",
+          "services.memory",
+          "services.ollama_service",
+          "services.project_service",
+          "services.service_registry"
+        ],
+        "dependencies": [],
+        "children": [
+          "diagnostics.py",
+          "internet.py",
+          "knowledge.py",
+          "llm.py",
+          "logger.py",
+          "memory.py",
+          "ollama_service.py",
+          "project_service.py",
+          "service_registry.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-06-30T06:48:52.049161+00:00"
+      },
+      {
+        "name": "diagnostics",
+        "path": "services/diagnostics.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "models.registry",
+          "services.memory",
+          "services.ollama_service",
+          "services.service_registry",
+          "tools.tool_registry"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T04:20:58.285501+00:00"
+      },
+      {
+        "name": "internet",
+        "path": "services/internet.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-27T14:41:07.991356+00:00"
+      },
+      {
+        "name": "knowledge",
+        "path": "services/knowledge.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-27T14:41:08.002358+00:00"
+      },
+      {
+        "name": "llm",
+        "path": "services/llm.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T04:17:55.835251+00:00"
+      },
+      {
+        "name": "logger",
+        "path": "services/logger.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T04:17:26.629080+00:00"
+      },
+      {
+        "name": "memory",
+        "path": "services/memory.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-30T18:20:26.777892+00:00"
+      },
+      {
+        "name": "ollama_service",
+        "path": "services/ollama_service.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T04:17:55.836250+00:00"
+      },
+      {
+        "name": "project_service",
+        "path": "services/project_service.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge",
+          "workspace"
+        ],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T11:28:27.252075+00:00"
+      },
+      {
+        "name": "service_registry",
+        "path": "services/service_registry.py",
+        "category": "services",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "services",
+        "last_modified": "2026-06-29T06:05:56.739703+00:00"
+      }
+    ],
+    "tools": [
+      {
+        "name": "tools",
+        "path": "tools",
+        "category": "tools",
+        "public_modules": [
+          "tools.base_tool",
+          "tools.calculator",
+          "tools.file_tool",
+          "tools.internet_tool",
+          "tools.memory_tool",
+          "tools.python_executor",
+          "tools.tool_registry"
+        ],
+        "dependencies": [],
+        "children": [
+          "base_tool.py",
+          "calculator.py",
+          "file_tool.py",
+          "internet_tool.py",
+          "memory_tool.py",
+          "python_executor.py",
+          "tool_registry.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-06-30T06:48:52.353211+00:00"
+      },
+      {
+        "name": "base_tool",
+        "path": "tools/base_tool.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-27T19:39:57.300638+00:00"
+      },
+      {
+        "name": "calculator",
+        "path": "tools/calculator.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "tools.base_tool"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-27T19:40:18.626344+00:00"
+      },
+      {
+        "name": "file_tool",
+        "path": "tools/file_tool.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-29T17:44:26.110079+00:00"
+      },
+      {
+        "name": "internet_tool",
+        "path": "tools/internet_tool.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-29T04:17:55.837251+00:00"
+      },
+      {
+        "name": "memory_tool",
+        "path": "tools/memory_tool.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "services.memory",
+          "tools.base_tool"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-27T20:36:52.617495+00:00"
+      },
+      {
+        "name": "python_executor",
+        "path": "tools/python_executor.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "tools.base_tool"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-27T19:41:00.559025+00:00"
+      },
+      {
+        "name": "tool_registry",
+        "path": "tools/tool_registry.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "tools.calculator",
+          "tools.file_tool",
+          "tools.internet_tool",
+          "tools.memory_tool",
+          "tools.python_executor"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-06-29T04:18:41.009799+00:00"
+      }
+    ],
+    "workspace": [
+      {
+        "name": "workspace",
+        "path": "workspace",
+        "category": "workspace",
+        "public_modules": [
+          "workspace.analyzer",
+          "workspace.dependency",
+          "workspace.git",
+          "workspace.project",
+          "workspace.scanner",
+          "workspace.summary",
+          "workspace.tree",
+          "workspace.workspace"
+        ],
+        "dependencies": [],
+        "children": [
+          "analyzer.py",
+          "dependency.py",
+          "git.py",
+          "project.py",
+          "scanner.py",
+          "summary.py",
+          "tree.py",
+          "workspace.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-06-30T06:48:52.404612+00:00"
+      },
+      {
+        "name": "analyzer",
+        "path": "workspace/analyzer.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.dependency",
+          "workspace.git",
+          "workspace.project"
+        ],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.823362+00:00"
+      },
+      {
+        "name": "dependency",
+        "path": "workspace/dependency.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.821361+00:00"
+      },
+      {
+        "name": "git",
+        "path": "workspace/git.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.822361+00:00"
+      },
+      {
+        "name": "project",
+        "path": "workspace/project.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.819363+00:00"
+      },
+      {
+        "name": "scanner",
+        "path": "workspace/scanner.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.820362+00:00"
+      },
+      {
+        "name": "summary",
+        "path": "workspace/summary.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.824962+00:00"
+      },
+      {
+        "name": "tree",
+        "path": "workspace/tree.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.820362+00:00"
+      },
+      {
+        "name": "workspace",
+        "path": "workspace/workspace.py",
+        "category": "workspace",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.analyzer",
+          "workspace.project",
+          "workspace.scanner",
+          "workspace.summary",
+          "workspace.tree"
+        ],
+        "children": [],
+        "parent_package": "workspace",
+        "last_modified": "2026-06-29T04:30:22.824962+00:00"
+      }
+    ],
+    "tests": [
+      {
+        "name": "tests",
+        "path": "tests",
+        "category": "tests",
+        "public_modules": [
+          "tests.test_action_registry",
+          "tests.test_agent_context",
+          "tests.test_agent_registry",
+          "tests.test_amalgam_core",
+          "tests.test_autonomous_executor",
+          "tests.test_autonomous_regression",
+          "tests.test_base_agent",
+          "tests.test_brain",
+          "tests.test_calculator",
+          "tests.test_capability_router_extended",
+          "tests.test_chief_agent",
+          "tests.test_chief_agent_mission",
+          "tests.test_config",
+          "tests.test_dependency_resolver",
+          "tests.test_diagnostics",
+          "tests.test_engineer_agent",
+          "tests.test_evaluator",
+          "tests.test_execution_memory",
+          "tests.test_executor",
+          "tests.test_file_tool",
+          "tests.test_fleet_manager",
+          "tests.test_fleet_manager_integration",
+          "tests.test_goal",
+          "tests.test_goal_regression",
+          "tests.test_intent",
+          "tests.test_internet_tool",
+          "tests.test_kernel",
+          "tests.test_knowledge_documents",
+          "tests.test_knowledge_engine",
+          "tests.test_knowledge_graph",
+          "tests.test_knowledge_index",
+          "tests.test_knowledge_parser",
+          "tests.test_knowledge_relationships",
+          "tests.test_knowledge_router",
+          "tests.test_knowledge_search",
+          "tests.test_knowledge_symbols",
+          "tests.test_logger",
+          "tests.test_memory_regression",
+          "tests.test_memory_tool",
+          "tests.test_messaging",
+          "tests.test_mission_core",
+          "tests.test_mission_epic",
+          "tests.test_mission_event_bus",
+          "tests.test_mission_executor",
+          "tests.test_mission_executor_integration",
+          "tests.test_mission_graph",
+          "tests.test_mission_orchestration",
+          "tests.test_mission_persistence",
+          "tests.test_mission_tool_integration",
+          "tests.test_models",
+          "tests.test_ollama_service",
+          "tests.test_orchestrator_agent",
+          "tests.test_pipeline",
+          "tests.test_planner",
+          "tests.test_planner_agent",
+          "tests.test_python_executor",
+          "tests.test_reflection",
+          "tests.test_registry",
+          "tests.test_research_agent",
+          "tests.test_retry_manager",
+          "tests.test_reviewer_agent",
+          "tests.test_scheduler",
+          "tests.test_scheduler_integration",
+          "tests.test_service_registry",
+          "tests.test_shared_context",
+          "tests.test_task",
+          "tests.test_task_queue",
+          "tests.test_tool_router",
+          "tests.test_version",
+          "tests.test_work_pool",
+          "tests.test_workspace",
+          "tests.test_workspace_analyzer",
+          "tests.test_workspace_dependency",
+          "tests.test_workspace_git",
+          "tests.test_workspace_scanner",
+          "tests.test_workspace_tree"
+        ],
+        "dependencies": [],
+        "children": [
+          "test_action_registry.py",
+          "test_agent_context.py",
+          "test_agent_registry.py",
+          "test_amalgam_core.py",
+          "test_autonomous_executor.py",
+          "test_autonomous_regression.py",
+          "test_base_agent.py",
+          "test_brain.py",
+          "test_calculator.py",
+          "test_capability_router_extended.py",
+          "test_chief_agent.py",
+          "test_chief_agent_mission.py",
+          "test_config.py",
+          "test_dependency_resolver.py",
+          "test_diagnostics.py",
+          "test_engineer_agent.py",
+          "test_evaluator.py",
+          "test_execution_memory.py",
+          "test_executor.py",
+          "test_file_tool.py",
+          "test_fleet_manager.py",
+          "test_fleet_manager_integration.py",
+          "test_goal.py",
+          "test_goal_regression.py",
+          "test_intent.py",
+          "test_internet_tool.py",
+          "test_kernel.py",
+          "test_knowledge_documents.py",
+          "test_knowledge_engine.py",
+          "test_knowledge_graph.py",
+          "test_knowledge_index.py",
+          "test_knowledge_parser.py",
+          "test_knowledge_relationships.py",
+          "test_knowledge_router.py",
+          "test_knowledge_search.py",
+          "test_knowledge_symbols.py",
+          "test_logger.py",
+          "test_memory_regression.py",
+          "test_memory_tool.py",
+          "test_messaging.py",
+          "test_mission_core.py",
+          "test_mission_epic.py",
+          "test_mission_event_bus.py",
+          "test_mission_executor.py",
+          "test_mission_executor_integration.py",
+          "test_mission_graph.py",
+          "test_mission_orchestration.py",
+          "test_mission_persistence.py",
+          "test_mission_tool_integration.py",
+          "test_models.py",
+          "test_ollama_service.py",
+          "test_orchestrator_agent.py",
+          "test_pipeline.py",
+          "test_planner.py",
+          "test_planner_agent.py",
+          "test_python_executor.py",
+          "test_reflection.py",
+          "test_registry.py",
+          "test_research_agent.py",
+          "test_retry_manager.py",
+          "test_reviewer_agent.py",
+          "test_scheduler.py",
+          "test_scheduler_integration.py",
+          "test_service_registry.py",
+          "test_shared_context.py",
+          "test_task.py",
+          "test_task_queue.py",
+          "test_tool_router.py",
+          "test_version.py",
+          "test_work_pool.py",
+          "test_workspace.py",
+          "test_workspace_analyzer.py",
+          "test_workspace_dependency.py",
+          "test_workspace_git.py",
+          "test_workspace_scanner.py",
+          "test_workspace_tree.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-07-06T00:45:12.276665+00:00"
+      },
+      {
+        "name": "test_action_registry",
+        "path": "tests/test_action_registry.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.action_registry"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:40:27.912235+00:00"
+      },
+      {
+        "name": "test_agent_context",
+        "path": "tests/test_agent_context.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.agent_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:17:22.652285+00:00"
+      },
+      {
+        "name": "test_agent_registry",
+        "path": "tests/test_agent_registry.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.agent_registry"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:17:22.652285+00:00"
+      },
+      {
+        "name": "test_amalgam_core",
+        "path": "tests/test_amalgam_core.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T00:45:52.908218+00:00"
+      },
+      {
+        "name": "test_autonomous_executor",
+        "path": "tests/test_autonomous_executor.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.evaluator.evaluator",
+          "brain.executor.autonomous_executor",
+          "brain.goal.goal",
+          "brain.memory.execution_memory",
+          "brain.queue.task_queue",
+          "brain.reflection.reflection_engine",
+          "brain.retry.retry_manager",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T18:58:52.619216+00:00"
+      },
+      {
+        "name": "test_autonomous_regression",
+        "path": "tests/test_autonomous_regression.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.executor.autonomous_executor",
+          "brain.goal.goal",
+          "brain.queue.task_queue",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T19:02:07.406015+00:00"
+      },
+      {
+        "name": "test_base_agent",
+        "path": "tests/test_base_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.base_agent",
+          "brain.messaging",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:22:09.217847+00:00"
+      },
+      {
+        "name": "test_brain",
+        "path": "tests/test_brain.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.brain"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:41:03.465962+00:00"
+      },
+      {
+        "name": "test_calculator",
+        "path": "tests/test_calculator.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.executor",
+          "kernel.task",
+          "tools.calculator"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:38:52.990839+00:00"
+      },
+      {
+        "name": "test_capability_router_extended",
+        "path": "tests/test_capability_router_extended.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.capability_router",
+          "brain.fleet_manager",
+          "brain.messaging"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:10:11.682327+00:00"
+      },
+      {
+        "name": "test_chief_agent",
+        "path": "tests/test_chief_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.chief_agent",
+          "brain.dependency_resolver",
+          "brain.messaging",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:08:56.962486+00:00"
+      },
+      {
+        "name": "test_chief_agent_mission",
+        "path": "tests/test_chief_agent_mission.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.chief_agent",
+          "brain.dependency_resolver",
+          "brain.messaging",
+          "brain.mission",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-03T20:54:05.334691+00:00"
+      },
+      {
+        "name": "test_config",
+        "path": "tests/test_config.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.496238+00:00"
+      },
+      {
+        "name": "test_dependency_resolver",
+        "path": "tests/test_dependency_resolver.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.dependency_resolver"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:08:06.360864+00:00"
+      },
+      {
+        "name": "test_diagnostics",
+        "path": "tests/test_diagnostics.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "services.diagnostics"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.498239+00:00"
+      },
+      {
+        "name": "test_engineer_agent",
+        "path": "tests/test_engineer_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.engineer",
+          "brain.executor.autonomous_executor",
+          "brain.goal.goal",
+          "brain.retry.retry_manager",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:46:58.706706+00:00"
+      },
+      {
+        "name": "test_evaluator",
+        "path": "tests/test_evaluator.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.evaluator.evaluator",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:44:54.728735+00:00"
+      },
+      {
+        "name": "test_execution_memory",
+        "path": "tests/test_execution_memory.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.memory.execution_memory"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:45:53.668007+00:00"
+      },
+      {
+        "name": "test_executor",
+        "path": "tests/test_executor.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.executor",
+          "kernel.task"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:40:41.215955+00:00"
+      },
+      {
+        "name": "test_file_tool",
+        "path": "tests/test_file_tool.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.executor",
+          "kernel.task",
+          "tools.file_tool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:39:37.953679+00:00"
+      },
+      {
+        "name": "test_fleet_manager",
+        "path": "tests/test_fleet_manager.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.fleet_manager",
+          "brain.messaging"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:08:17.141917+00:00"
+      },
+      {
+        "name": "test_fleet_manager_integration",
+        "path": "tests/test_fleet_manager_integration.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.chief_agent",
+          "brain.dependency_resolver",
+          "brain.fleet_manager",
+          "brain.messaging",
+          "brain.mission",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-05T20:24:00.844527+00:00"
+      },
+      {
+        "name": "test_goal",
+        "path": "tests/test_goal.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.goal.goal",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:53:14.764473+00:00"
+      },
+      {
+        "name": "test_goal_regression",
+        "path": "tests/test_goal_regression.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.goal.goal",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T18:59:17.656556+00:00"
+      },
+      {
+        "name": "test_intent",
+        "path": "tests/test_intent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.intent.intent"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T06:09:28.884544+00:00"
+      },
+      {
+        "name": "test_internet_tool",
+        "path": "tests/test_internet_tool.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "kernel.executor",
+          "kernel.task",
+          "tools.internet_tool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.492237+00:00"
+      },
+      {
+        "name": "test_kernel",
+        "path": "tests/test_kernel.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "kernel.executor"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.493238+00:00"
+      },
+      {
+        "name": "test_knowledge_documents",
+        "path": "tests/test_knowledge_documents.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.documents"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.217526+00:00"
+      },
+      {
+        "name": "test_knowledge_engine",
+        "path": "tests/test_knowledge_engine.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.224151+00:00"
+      },
+      {
+        "name": "test_knowledge_graph",
+        "path": "tests/test_knowledge_graph.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.graph"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.222141+00:00"
+      },
+      {
+        "name": "test_knowledge_index",
+        "path": "tests/test_knowledge_index.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.index"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.222141+00:00"
+      },
+      {
+        "name": "test_knowledge_parser",
+        "path": "tests/test_knowledge_parser.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.parser"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.218529+00:00"
+      },
+      {
+        "name": "test_knowledge_relationships",
+        "path": "tests/test_knowledge_relationships.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.relationships"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.219529+00:00"
+      },
+      {
+        "name": "test_knowledge_router",
+        "path": "tests/test_knowledge_router.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.knowledge_router",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:08:36.283610+00:00"
+      },
+      {
+        "name": "test_knowledge_search",
+        "path": "tests/test_knowledge_search.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.search"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.222141+00:00"
+      },
+      {
+        "name": "test_knowledge_symbols",
+        "path": "tests/test_knowledge_symbols.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "knowledge.symbols"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:42:57.219529+00:00"
+      },
+      {
+        "name": "test_logger",
+        "path": "tests/test_logger.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "services.logger"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.497240+00:00"
+      },
+      {
+        "name": "test_memory_regression",
+        "path": "tests/test_memory_regression.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.memory.execution_memory",
+          "services.memory"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T18:59:57.657064+00:00"
+      },
+      {
+        "name": "test_memory_tool",
+        "path": "tests/test_memory_tool.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.executor",
+          "kernel.task",
+          "services.memory",
+          "tools.memory_tool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:39:12.702377+00:00"
+      },
+      {
+        "name": "test_messaging",
+        "path": "tests/test_messaging.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.messaging"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:17:22.652285+00:00"
+      },
+      {
+        "name": "test_mission_core",
+        "path": "tests/test_mission_core.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T11:23:52.119915+00:00"
+      },
+      {
+        "name": "test_mission_epic",
+        "path": "tests/test_mission_epic.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T11:43:30.720214+00:00"
+      },
+      {
+        "name": "test_mission_event_bus",
+        "path": "tests/test_mission_event_bus.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-05T18:02:11.724487+00:00"
+      },
+      {
+        "name": "test_mission_executor",
+        "path": "tests/test_mission_executor.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-03T17:12:06.921884+00:00"
+      },
+      {
+        "name": "test_mission_executor_integration",
+        "path": "tests/test_mission_executor_integration.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.executor.autonomous_executor",
+          "brain.mission",
+          "brain.planner.planner"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-03T17:06:38.510730+00:00"
+      },
+      {
+        "name": "test_mission_graph",
+        "path": "tests/test_mission_graph.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission",
+          "brain.mission.graph"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T12:10:57.874174+00:00"
+      },
+      {
+        "name": "test_mission_orchestration",
+        "path": "tests/test_mission_orchestration.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.chief_agent",
+          "brain.dependency_resolver",
+          "brain.fleet_manager",
+          "brain.messaging",
+          "brain.mission",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-05T21:17:28.260895+00:00"
+      },
+      {
+        "name": "test_mission_persistence",
+        "path": "tests/test_mission_persistence.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T16:20:41.921499+00:00"
+      },
+      {
+        "name": "test_mission_tool_integration",
+        "path": "tests/test_mission_tool_integration.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission",
+          "brain.mission.mission_executor"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-03T18:48:28.913006+00:00"
+      },
+      {
+        "name": "test_models",
+        "path": "tests/test_models.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "models.registry",
+          "models.selector"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.494239+00:00"
+      },
+      {
+        "name": "test_ollama_service",
+        "path": "tests/test_ollama_service.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "services.ollama_service"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:42:03.544612+00:00"
+      },
+      {
+        "name": "test_orchestrator_agent",
+        "path": "tests/test_orchestrator_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.orchestrator_agent",
+          "brain.agent_registry",
+          "brain.messaging",
+          "brain.scheduler",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:37:28.702370+00:00"
+      },
+      {
+        "name": "test_pipeline",
+        "path": "tests/test_pipeline.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.brain",
+          "kernel.executor"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:41:14.259100+00:00"
+      },
+      {
+        "name": "test_planner",
+        "path": "tests/test_planner.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission",
+          "brain.mission.graph",
+          "brain.planner.planner"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T15:49:09.211770+00:00"
+      },
+      {
+        "name": "test_planner_agent",
+        "path": "tests/test_planner_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.planner_agent",
+          "brain.mission",
+          "brain.mission.graph",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-02T22:44:45.990972+00:00"
+      },
+      {
+        "name": "test_python_executor",
+        "path": "tests/test_python_executor.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.executor",
+          "kernel.task",
+          "tools.python_executor"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:39:24.315677+00:00"
+      },
+      {
+        "name": "test_reflection",
+        "path": "tests/test_reflection.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.reflection.reflection_engine",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:44:54.728735+00:00"
+      },
+      {
+        "name": "test_registry",
+        "path": "tests/test_registry.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "tools.tool_registry"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:39:57.113771+00:00"
+      },
+      {
+        "name": "test_research_agent",
+        "path": "tests/test_research_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.research_agent",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:24:16.061030+00:00"
+      },
+      {
+        "name": "test_retry_manager",
+        "path": "tests/test_retry_manager.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.retry.retry_manager",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:53:14.764473+00:00"
+      },
+      {
+        "name": "test_reviewer_agent",
+        "path": "tests/test_reviewer_agent.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.reviewer_agent",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:24:16.061030+00:00"
+      },
+      {
+        "name": "test_scheduler",
+        "path": "tests/test_scheduler.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.agent_registry",
+          "brain.messaging",
+          "brain.scheduler",
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:17:22.652285+00:00"
+      },
+      {
+        "name": "test_scheduler_integration",
+        "path": "tests/test_scheduler_integration.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "agents.chief_agent",
+          "brain.dependency_resolver",
+          "brain.fleet_manager",
+          "brain.messaging",
+          "brain.mission",
+          "brain.planner.planner",
+          "brain.shared_context",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-05T20:25:50.655399+00:00"
+      },
+      {
+        "name": "test_service_registry",
+        "path": "tests/test_service_registry.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T06:07:24.117977+00:00"
+      },
+      {
+        "name": "test_shared_context",
+        "path": "tests/test_shared_context.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.shared_context"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T09:17:22.652285+00:00"
+      },
+      {
+        "name": "test_task",
+        "path": "tests/test_task.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.task"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-27T20:38:41.604085+00:00"
+      },
+      {
+        "name": "test_task_queue",
+        "path": "tests/test_task_queue.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.queue.task_queue",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-30T17:44:54.728735+00:00"
+      },
+      {
+        "name": "test_tool_router",
+        "path": "tests/test_tool_router.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.tools.tool_router",
+          "config"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.495239+00:00"
+      },
+      {
+        "name": "test_version",
+        "path": "tests/test_version.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "config",
+          "config.version"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:21:51.496238+00:00"
+      },
+      {
+        "name": "test_work_pool",
+        "path": "tests/test_work_pool.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "brain.messaging",
+          "brain.work_pool"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-01T12:08:27.324473+00:00"
+      },
+      {
+        "name": "test_workspace",
+        "path": "tests/test_workspace.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.workspace"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.403578+00:00"
+      },
+      {
+        "name": "test_workspace_analyzer",
+        "path": "tests/test_workspace_analyzer.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.analyzer",
+          "workspace.scanner"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.402576+00:00"
+      },
+      {
+        "name": "test_workspace_dependency",
+        "path": "tests/test_workspace_dependency.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.dependency"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.401579+00:00"
+      },
+      {
+        "name": "test_workspace_git",
+        "path": "tests/test_workspace_git.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.git"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.401579+00:00"
+      },
+      {
+        "name": "test_workspace_scanner",
+        "path": "tests/test_workspace_scanner.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.scanner"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.400549+00:00"
+      },
+      {
+        "name": "test_workspace_tree",
+        "path": "tests/test_workspace_tree.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [
+          "workspace.tree"
+        ],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-06-29T04:31:37.402576+00:00"
+      }
+    ],
+    "scripts": [
+      {
+        "name": "scripts",
+        "path": "scripts",
+        "category": "scripts",
+        "public_modules": [
+          "scripts.bootstrap",
+          "scripts.context",
+          "scripts.registry"
+        ],
+        "dependencies": [],
+        "children": [
+          "bootstrap.py",
+          "context.py",
+          "registry.py"
+        ],
+        "parent_package": null,
+        "last_modified": "2026-07-05T21:49:06.532429+00:00"
+      },
+      {
+        "name": "bootstrap",
+        "path": "scripts/bootstrap.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T00:31:53.178818+00:00"
+      },
+      {
+        "name": "context",
+        "path": "scripts/context.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T00:32:08.450562+00:00"
+      },
+      {
+        "name": "registry",
+        "path": "scripts/registry.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T00:25:50.511645+00:00"
+      }
+    ],
+    "docs": [
+      {
+        "name": "docs",
+        "path": "docs",
+        "category": "docs",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": null,
+        "last_modified": "2026-07-02T18:18:48.348951+00:00"
+      }
+    ]
+  },
+  "verified": true
+}

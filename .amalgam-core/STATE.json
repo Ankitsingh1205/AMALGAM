@@ -1,0 +1,12 @@
+{
+  "checkpoint": {
+    "sequence": 2,
+    "stage": "idle",
+    "at": "2026-07-06T00:56:24.006664+00:00",
+    "by": {
+      "worker": "context_engine"
+    }
+  },
+  "last_updated": "2026-07-06T00:56:25.579626+00:00",
+  "current_stage": "idle"
+}

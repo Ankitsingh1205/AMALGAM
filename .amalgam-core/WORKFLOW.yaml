@@ -1,0 +1,189 @@
+# AMALGAM Workflow Configuration
+#
+# Generated from LOOP.md (the authoritative human specification).
+# Every definition maps to exactly one LOOP stage.  LOOP.md is the source of
+# truth for stage descriptions, failure handling, resume behaviour, and
+# checkpoint format.  This file provides the machine-readable representation.
+#
+# Do NOT edit manually -- update LOOP.md and regenerate this file.
+# This file is validated by the bootstrap script on every run.
+
+workflow:
+  name: "amalgam-default"
+  version: "1.0"
+  generated_from: ".amalgam-core/LOOP.md"
+
+  phases:
+    - name: UNDERSTAND
+      scope: "Repository inspection, architecture analysis, existing code
+              discovery, dependency discovery, reuse decision."
+      stages: [1, 2, 3, 4, 5]
+
+    - name: PLAN
+      scope: "Produce the ordered implementation plan."
+      stages: [6]
+
+    - name: EXECUTE
+      scope: "Implement changes, run static validation, execute tests."
+      stages: [7, 8, 9]
+
+    - name: RECOVER
+      scope: "Analyze test failures, apply recovery strategies, rerun tests."
+      stages: [10, 11]
+
+    - name: COMPLETE
+      scope: "Documentation update, checkpoint save, state update, mission
+              update, history update, final report."
+      stages: [12, 13, 14, 15, 16, 17]
+
+  stages:
+    # Stage identity is defined solely by LOOP.md section headings.
+    # Every stage number, name, and phase is a direct mapping.
+
+    - number: 1
+      name: "Repository Inspection"
+      phase: UNDERSTAND
+
+    - number: 2
+      name: "Architecture Analysis"
+      phase: UNDERSTAND
+
+    - number: 3
+      name: "Existing Code Discovery"
+      phase: UNDERSTAND
+
+    - number: 4
+      name: "Dependency Discovery"
+      phase: UNDERSTAND
+
+    - number: 5
+      name: "Reuse Decision"
+      phase: UNDERSTAND
+
+    - number: 6
+      name: "Planning"
+      phase: PLAN
+
+    - number: 7
+      name: "Implementation"
+      phase: EXECUTE
+
+    - number: 8
+      name: "Static Validation"
+      phase: EXECUTE
+
+    - number: 9
+      name: "Testing"
+      phase: EXECUTE
+
+    - number: 10
+      name: "Failure Recovery"
+      phase: RECOVER
+
+    - number: 11
+      name: "Regression Testing"
+      phase: RECOVER
+
+    - number: 12
+      name: "Documentation Update"
+      phase: COMPLETE
+
+    - number: 13
+      name: "Checkpoint Save"
+      phase: COMPLETE
+
+    - number: 14
+      name: "State Update"
+      phase: COMPLETE
+
+    - number: 15
+      name: "Mission Update"
+      phase: COMPLETE
+
+    - number: 16
+      name: "History Update"
+      phase: COMPLETE
+
+    - number: 17
+      name: "Completion"
+      phase: COMPLETE
+
+  # Dependency graph derived from LOOP.md "Dependency Graph" section.
+  # Edges denote "must complete before" ordering.
+  # auto_advance edges are followed on stage success.
+  # retry_target is the jump-back stage on failure (LOOP.md: "RETURN TO
+  # stage 7" on test failure, "RETURN TO stage 10" on partial recovery).
+  dependency_graph:
+    # Sequential pipeline 1 -> 2 -> ... -> 9
+    sequential:
+      - [1, 2]
+      - [2, 3]
+      - [3, 4]
+      - [4, 5]
+      - [5, 6]
+      - [6, 7]
+      - [7, 8]
+      - [8, 9]
+
+    # Stage 9 branching decision (LOOP.md line 43-55)
+    decision_point:
+      from: 9
+      on_success: 12
+      on_failure: 10
+
+    # COMPLETE pipeline 12 -> 13 -> 14 -> 15 -> 16 -> 17
+    complete_pipeline:
+      - [12, 13]
+      - [13, 14]
+      - [14, 15]
+      - [15, 16]
+      - [16, 17]
+
+    # RECOVER pipeline
+    recover_pipeline:
+      - [10, 11]
+
+    # Recovery outcomes (LOOP.md lines 52-55, 721-745)
+    recovery_decision:
+      from: 11
+      on_success: 12
+      on_partial: 10
+      on_failure: "TERMINATED"
+
+    # Test failure retry target (LOOP.md Stage 9 failure -> Stage 10;
+    # after fix in Stage 10 -> Stage 11 -> if success to Stage 12;
+    # if partial back to Stage 10; individual fix failures -> Stage 7).
+    retry_targets:
+      test_failure_implementation_fix: 7
+      test_failure_strategy_fix: 10
+      max_retries: 3
+
+  # Invariants that hold at every stage boundary (from LOOP.md line 1120-1134)
+  invariants:
+    - "Layer boundaries preserved"
+    - "No circular imports"
+    - "No duplicate implementations"
+    - "Public APIs preserved"
+    - "No dead code"
+    - "No placeholder code"
+    - "No security violations"
+    - "State is checkpointed in STATE.json"
+    - "Retry count bounded by max_retries"
+    - "Scope preserved (every action maps to a TASK.md deliverable)"
+
+  # Terminal states (from LOOP.md line 1137-1151)
+  termination:
+    LOOP_COMPLETE:
+      condition: "Stage 17 completes successfully"
+      phase: TERMINATED
+    LOOP_FAILED:
+      conditions:
+        - "Stage 11 RECOVERY_FAILED (max retries exceeded)"
+        - "Stage 10 escalation (unrecoverable failure)"
+        - "Stage 1 unrecoverable (repository unreadable)"
+        - "Stage 2 layer violation cannot be resolved"
+        - "Stage 5 duplication cannot be eliminated"
+      phase: TERMINATED
+    LOOP_PAUSED:
+      condition: "User explicitly stops execution"
+      phase: "PAUSED (resumable)"
