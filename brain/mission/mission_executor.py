@@ -37,6 +37,17 @@ class MissionExecutor:
         self._planner = Planner()
         self._executor = AutonomousExecutor()
         self._logger = get_logger("mission_executor")
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        """Request cancellation of the current execution loop.
+
+        The cancellation flag is checked before each mission is executed.
+        Any missions that have not yet started will be marked as
+        ``CANCELLED`` when the loop encounters them.
+        """
+        self._cancelled = True
+        self._logger.info("mission execution cancellation requested")
 
     def execute(
         self,
@@ -71,6 +82,8 @@ class MissionExecutor:
         skipped: list[Mission] = []
         failures: list[str] = []
 
+        cancelled: list[str] = []
+
         for mission in plan:
             if not self._is_currently_executable(mission):
                 skipped.append(mission)
@@ -88,6 +101,11 @@ class MissionExecutor:
                 mission.transition(MissionStatus.READY)
             elif mission.status == MissionStatus.PLANNING:
                 mission.transition(MissionStatus.READY)
+
+            if self._cancelled:
+                mission.transition(MissionStatus.CANCELLED)
+                cancelled.append(str(mission.id))
+                continue
 
             mission.transition(MissionStatus.RUNNING)
 
@@ -111,6 +129,7 @@ class MissionExecutor:
                         failed_mission=str(mission.id),
                         error=mission.error,
                     )
+                    self._cancelled = False
                     return {
                         "success": False,
                         "results": results,
@@ -120,11 +139,13 @@ class MissionExecutor:
                         "error": mission.error,
                     }
 
+        self._cancelled = False
         return {
-            "success": len(failures) == 0,
+            "success": len(failures) == 0 and len(cancelled) == 0,
             "results": results,
             "executed": len(executed),
-            "skipped": total_missions - len(executed),
+            "skipped": total_missions - len(executed) - len(cancelled),
+            "cancelled": len(cancelled),
         }
 
     def _execute_one(self, mission: Mission) -> dict[str, Any]:

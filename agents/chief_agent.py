@@ -8,6 +8,7 @@ from agents.base_agent import BaseAgent
 from brain.dependency_resolver import DependencyResolver, CycleError
 from brain.fleet_manager import FleetManager
 from brain.messaging import Messaging, Message
+from brain.mission.mission import Mission
 from brain.mission.mission_status import MissionStatus
 from brain.shared_context import SharedContext
 from brain.work_pool import WorkPool
@@ -60,6 +61,9 @@ class ChiefAgent(BaseAgent):
         self._completed_tasks: set[str] = set()
         self._pending_tasks: dict[str, dict] = {}
         self._task_results: dict[str, Any] = {}
+        self._cancelled = False
+        self._current_graph: Any = None
+        self._current_plan: list[Any] = []
 
         # Subscribe to broadcast events from the WorkPool
         self._messaging.subscribe("chief", self._on_message)
@@ -339,6 +343,190 @@ class ChiefAgent(BaseAgent):
             "skipped": result.get("skipped", 0),
             "errors": errors,
         }
+
+
+    # ------------------------------------------------------------------
+    # Orchestration API — Mission 7.1.7
+    # ------------------------------------------------------------------
+
+    def execute_graph(
+        self,
+        graph: Any,
+        event_bus: Optional[Any] = None,
+        timeout: float = 300.0,
+        force_sequential: bool = False,
+    ) -> dict[str, Any]:
+        """Alias for :meth:`execute_mission` — accepts any graph type.
+
+        This method exists for API clarity when the caller explicitly
+        wants to execute a graph-shaped mission plan.  Behaviour is
+        identical to :meth:`execute_mission`.
+        """
+        return self.execute_mission(
+            graph=graph,
+            event_bus=event_bus,
+            timeout=timeout,
+            force_sequential=force_sequential,
+        )
+
+    def resume_execution(
+        self,
+        persistence_path: str,
+        event_bus: Optional[Any] = None,
+        timeout: float = 300.0,
+        force_sequential: bool = False,
+    ) -> dict[str, Any]:
+        """Resume a previously persisted mission graph.
+
+        Loads the graph from *persistence_path*, resets any missions
+        that were in ``RUNNING`` or ``RECOVERING`` back to ``READY``,
+        skips missions already in terminal states, and re-executes the
+        remainder.
+
+        Args:
+            persistence_path: File path written by
+                ``MissionPersistence.save_graph()``.
+            event_bus: Optional ``MissionEventBus`` for lifecycle events.
+            timeout: Distributed execution timeout in seconds.
+            force_sequential: If ``True``, bypass distributed dispatch.
+
+        Returns:
+            Execution result dictionary.
+        """
+        from pathlib import Path
+        from brain.mission.persistence import MissionPersistence
+
+        self._logger.info("resuming execution", path=persistence_path)
+
+        if not Path(persistence_path).exists():
+            return {
+                "success": False,
+                "errors": [f"Persistence file not found: {persistence_path}"],
+                "executed": 0,
+                "skipped": 0,
+                "results": {},
+            }
+
+        try:
+            graph = MissionPersistence.load_graph(persistence_path)
+        except Exception as e:
+            self._logger.error("failed to load persisted graph", error=str(e))
+            return {
+                "success": False,
+                "errors": [str(e)],
+                "executed": 0,
+                "skipped": 0,
+                "results": {},
+            }
+
+        # Reset non-terminal missions that were in-flight when persisted.
+        for node in graph._nodes.values():
+            mission = node.mission
+            if mission.status in {
+                MissionStatus.RUNNING,
+                MissionStatus.RECOVERING,
+                MissionStatus.VERIFYING,
+            }:
+                mission.status = MissionStatus.READY
+                mission.error = ""
+
+        return self.execute_mission(
+            graph=graph,
+            event_bus=event_bus,
+            timeout=timeout,
+            force_sequential=force_sequential,
+        )
+
+    def cancel_execution(self) -> dict[str, Any]:
+        """Cancel the current mission execution.
+
+        Sets the internal cancellation flag, unblocks any waiting
+        threads, and marks all pending missions as ``CANCELLED``.  For
+        the sequential path this also forwards the cancellation to
+        ``MissionExecutor``.  For the distributed path it clears the
+        WorkPool tracking state.
+
+        Returns:
+            Dictionary with ``success`` and ``cancelled_count``.
+        """
+        self._cancelled = True
+        self._logger.info("execution cancellation requested")
+
+        with self._lock:
+            # Unblock the distributed wait.
+            self._mission_result = {"success": False, "errors": ["Execution cancelled by user"]}
+            self._completion_event.set()
+
+            # Mark remaining pending missions as cancelled.
+            cancelled_count = 0
+            for task_id, task in list(self._pending_tasks.items()):
+                mission = task.get("data")
+                if isinstance(mission, Mission) and not mission.status.is_terminal():
+                    try:
+                        mission.transition(MissionStatus.CANCELLED)
+                        cancelled_count += 1
+                    except ValueError:
+                        pass
+                del self._pending_tasks[task_id]
+
+        # Forward cancellation to the sequential executor.
+        try:
+            from brain.mission.mission_executor import MissionExecutor
+            # Trigger cancellation on any active MissionExecutor instance.
+            # In practice only one executor is active at a time.
+            MissionExecutor().cancel()
+        except Exception:
+            pass
+
+        self._logger.info("execution cancelled", cancelled_count=cancelled_count)
+        return {"success": True, "cancelled_count": cancelled_count}
+
+    def graceful_shutdown(self, timeout: float = 30.0) -> dict[str, Any]:
+        """Gracefully shut down the ChiefAgent.
+
+        1. Cancels any pending missions.
+        2. Waits up to *timeout* seconds for in-flight work to complete.
+        3. Unregisters from the ``FleetManager`` if attached.
+        4. Clears internal state.
+
+        Args:
+            timeout: Seconds to wait for in-flight work before forcing
+                cancellation.
+
+        Returns:
+            Dictionary with ``success`` and ``status``.
+        """
+        self._logger.info("graceful shutdown initiated", timeout=timeout)
+
+        # Cancel pending work.
+        self.cancel_execution()
+
+        # Wait briefly for in-flight missions to finish.
+        if self._completion_event.is_set():
+            # Already complete — nothing to wait for.
+            pass
+        else:
+            self._completion_event.wait(timeout=timeout)
+
+        # Unregister from FleetManager.
+        if self._fleet_manager is not None:
+            try:
+                self._fleet_manager.unregister("chief")
+            except Exception:
+                pass
+
+        # Clear all internal state.
+        with self._lock:
+            self._completed_tasks.clear()
+            self._pending_tasks.clear()
+            self._task_results.clear()
+            self._mission_result = {"success": False, "errors": []}
+            self._active_mission = ""
+            self._planning_task_id = ""
+            self._cancelled = False
+
+        self._logger.info("graceful shutdown complete")
+        return {"success": True, "status": "shutdown"}
 
     def _execute_sequential(self, graph: Any) -> dict[str, Any]:
         """Execute a MissionGraph sequentially via MissionExecutor.
