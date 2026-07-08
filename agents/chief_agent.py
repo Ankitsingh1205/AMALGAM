@@ -5,30 +5,47 @@ import uuid
 from typing import Any, Optional
 
 from agents.base_agent import BaseAgent
+from agents.engineer import EngineerAgent
+from agents.planner_agent import PlannerAgent
+from agents.research_agent import ResearchAgent
+from agents.reviewer_agent import ReviewerAgent
+from brain.agent_registry import AgentRegistry
 from brain.dependency_resolver import DependencyResolver, CycleError
 from brain.fleet_manager import FleetManager
 from brain.messaging import Messaging, Message
 from brain.mission.mission import Mission
 from brain.mission.mission_status import MissionStatus
+from brain.scheduler import Scheduler
 from brain.shared_context import SharedContext
 from brain.work_pool import WorkPool
 
 
 class ChiefAgent(BaseAgent):
-    """Orchestrates adaptive missions using capability-aware work stealing.
+    """Central orchestration layer for AMALGAM's multi-agent system.
 
-    The ChiefAgent NEVER executes work itself. Instead, it delegates mission
-    decomposition to a planning capability via the WorkPool. It then resolves
-    sub-task dependencies and dynamically schedules execution by submitting
-    ready tasks to the WorkPool.
+    The ChiefAgent NEVER executes work itself. It coordinates three
+    orchestration paths:
 
-    Uses event-driven execution via the Messaging bus to avoid polling.
+    1. **Task orchestration** — :meth:`run` decomposes a task via the
+       WorkPool, resolves sub-task dependencies through
+       ``DependencyResolver``, and dispatches ready tasks to workers
+       by capability.
 
-    For Mission-level orchestration, :meth:`execute_mission` dispatches a
-    ``MissionGraph`` to ``MissionExecutor`` while publishing lifecycle
-    events through an optional ``MissionEventBus``.  Execution remains
-    owned by ``MissionExecutor``; ``ChiefAgent`` only validates, dispatches,
-    and reports.
+    2. **Mission orchestration** — :meth:`execute_mission` validates a
+       ``MissionGraph`` through the ``Planner``, dispatches execution
+       to ``MissionExecutor`` (sequential or distributed via
+       ``FleetManager`` + ``WorkPool``), and publishes lifecycle events
+       through an optional ``MissionEventBus``.
+
+    3. **Agent pipeline orchestration** — :meth:`run_pipeline` chains
+       the standard agent fleet (PlannerAgent, ResearchAgent,
+       ReviewerAgent, EngineerAgent) through the ``Scheduler``,
+       reusing the same dispatch mechanism as ``OrchestratorAgent``.
+
+    Execution is always owned by downstream components:
+    ``MissionExecutor``, ``AutonomousExecutor``, ``Scheduler``, and
+    ``WorkPool``.  ``ChiefAgent`` only validates, dispatches, and
+    reports.
     """
 
     def __init__(
@@ -38,6 +55,8 @@ class ChiefAgent(BaseAgent):
         shared_context: Optional[SharedContext] = None,
         messaging: Optional[Messaging] = None,
         fleet_manager: Optional[FleetManager] = None,
+        registry: Optional[AgentRegistry] = None,
+        scheduler: Optional[Scheduler] = None,
     ) -> None:
         # Reuse the WorkPool's messaging bus when no explicit bus is
         # provided.  The chief must listen on the same bus that the
@@ -49,6 +68,8 @@ class ChiefAgent(BaseAgent):
         self._work_pool = work_pool
         self._resolver = dependency_resolver
         self._fleet_manager = fleet_manager
+        self._registry = registry
+        self._scheduler = scheduler
 
         # Synchronization for event-driven orchestration
         self._lock = threading.RLock()
@@ -185,6 +206,9 @@ class ChiefAgent(BaseAgent):
             self._mission_result = {"success": False, "errors": []}
             self._completion_event.clear()
 
+        # Heartbeat: task decomposition starting
+        self._send_heartbeat(status="running", load=1)
+
         # Submit decomposition task to the planning capability
         plan_task = {
             "id": self._planning_task_id,
@@ -198,6 +222,10 @@ class ChiefAgent(BaseAgent):
         self._completion_event.wait()
 
         self._status = "completed" if self._mission_result["success"] else "failed"
+
+        # Heartbeat: task decomposition finished
+        self._send_heartbeat(status=self._status, load=0)
+
         return self._mission_result
 
     def execute_mission(
@@ -452,6 +480,11 @@ class ChiefAgent(BaseAgent):
         self._cancelled = True
         self._logger.info("execution cancellation requested")
 
+        # Heartbeat: cancellation starting (load = pending mission count)
+        with self._lock:
+            pending_load = len(self._pending_tasks)
+        self._send_heartbeat(status="running", load=pending_load)
+
         with self._lock:
             # Unblock the distributed wait.
             self._mission_result = {"success": False, "errors": ["Execution cancelled by user"]}
@@ -479,6 +512,10 @@ class ChiefAgent(BaseAgent):
             pass
 
         self._logger.info("execution cancelled", cancelled_count=cancelled_count)
+
+        # Heartbeat: cancellation finished
+        self._send_heartbeat(status="cancelled", load=0)
+
         return {"success": True, "cancelled_count": cancelled_count}
 
     def graceful_shutdown(self, timeout: float = 30.0) -> dict[str, Any]:
@@ -527,6 +564,147 @@ class ChiefAgent(BaseAgent):
 
         self._logger.info("graceful shutdown complete")
         return {"success": True, "status": "shutdown"}
+
+    # ------------------------------------------------------------------
+    # Central orchestration API — Mission 7.2
+    # ------------------------------------------------------------------
+
+    DEFAULT_PIPELINE: list[str] = [
+        "planner",
+        "researcher",
+        "reviewer",
+        "engineer",
+    ]
+
+    def _register_agents(self) -> None:
+        """Register the standard agent fleet if not already present.
+
+        Creates and registers ``PlannerAgent``, ``ResearchAgent``,
+        ``ReviewerAgent``, and ``EngineerAgent`` in the internal
+        ``AgentRegistry``.  Called lazily by :meth:`run_pipeline` so
+        agents are only created when pipeline execution is requested.
+
+        Reuses existing agent implementations — no new agent classes.
+        """
+        if self._registry is None:
+            self._registry = AgentRegistry()
+
+        if "planner" not in self._registry:
+            self._registry.register(
+                "planner",
+                PlannerAgent(self._shared, self._messaging),
+            )
+        if "researcher" not in self._registry:
+            self._registry.register(
+                "researcher",
+                ResearchAgent(self._shared, self._messaging),
+            )
+        if "reviewer" not in self._registry:
+            self._registry.register(
+                "reviewer",
+                ReviewerAgent(self._shared, self._messaging),
+            )
+        if "engineer" not in self._registry:
+            self._registry.register("engineer", EngineerAgent())
+
+        if self._scheduler is None:
+            self._scheduler = Scheduler(self._registry, self._messaging)
+
+    def run_pipeline(
+        self,
+        shared_context: SharedContext,
+        pipeline: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
+        """Execute the multi-agent pipeline via the Scheduler.
+
+        This is the central orchestration entry point that chains agents
+        in order through the existing ``Scheduler`` — the same mechanism
+        used by ``OrchestratorAgent``.  ``ChiefAgent`` only registers
+        agents and dispatches; the Scheduler owns execution ordering.
+
+        Args:
+            shared_context: Shared context containing a ``task`` key.
+            pipeline: Optional custom pipeline order.  Defaults to
+                ``["planner", "researcher", "reviewer", "engineer"]``.
+
+        Returns:
+            Dictionary with ``success``, ``task``, ``goal``, ``errors``,
+            and ``pipeline`` keys.
+        """
+        self._status = "running"
+        task = shared_context.get("task")
+        if not task:
+            error = "No task provided in shared context"
+            self._logger.error(error)
+            self._status = "failed"
+            return {"success": False, "task": None, "goal": None, "errors": [error]}
+
+        self._register_agents()
+        ordered = pipeline or list(self.DEFAULT_PIPELINE)
+
+        self._logger.info("chief dispatching pipeline", pipeline=ordered, task=task)
+
+        self._send_heartbeat(status="running", load=len(ordered))
+
+        try:
+            result = self._scheduler.run_pipeline(ordered, shared_context)
+        except Exception as e:
+            self._logger.error("pipeline exception", error=str(e))
+            self._status = "failed"
+            self._send_heartbeat(status="failed", load=0)
+            return {
+                "success": False,
+                "task": task,
+                "goal": None,
+                "errors": [str(e)],
+                "pipeline": ordered,
+            }
+
+        if not result.get("success"):
+            error = result.get("error", "Pipeline failed")
+            failed_agent = result.get("failed_agent", "unknown")
+            self._logger.error("pipeline failure", agent=failed_agent, error=error)
+            self._status = "failed"
+            self._send_heartbeat(status="failed", load=0)
+            return {
+                "success": False,
+                "task": task,
+                "goal": shared_context.get("goal"),
+                "errors": [error],
+                "pipeline": ordered,
+            }
+
+        engineer_result = result.get("results", {}).get("engineer", {})
+        goal = engineer_result.get("goal")
+        success = engineer_result.get("success", result.get("success", False))
+        errors = engineer_result.get("errors", [])
+
+        self._status = "completed"
+        self._send_heartbeat(status="completed", load=0)
+        self._logger.info("chief pipeline complete", success=success)
+
+        return {
+            "success": success,
+            "task": task,
+            "goal": goal,
+            "errors": errors,
+            "pipeline": ordered,
+        }
+
+    def execute(self, task: str, priority: int = 5) -> dict[str, Any]:
+        """Convenience method: create a fresh context and run the pipeline.
+
+        Args:
+            task: Human-readable task description.
+            priority: Optional priority (default 5 = NORMAL).
+
+        Returns:
+            Structured result dictionary from :meth:`run_pipeline`.
+        """
+        ctx = self._shared or SharedContext()
+        ctx.set("task", task)
+        ctx.set("priority", priority)
+        return self.run_pipeline(ctx)
 
     def _execute_sequential(self, graph: Any) -> dict[str, Any]:
         """Execute a MissionGraph sequentially via MissionExecutor.

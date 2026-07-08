@@ -77,6 +77,44 @@ class FleetManager:
             agent = self._agents.get(agent_name)
             return agent.copy() if agent else {}
 
+    def unregister(self, agent_name: str) -> None:
+        """Remove an agent from the fleet.
+
+        Called during graceful shutdown. No-op if the agent is unknown.
+        """
+        with self._lock:
+            removed = self._agents.pop(agent_name, None)
+        if removed is not None:
+            self._logger.info("agent unregistered from fleet", agent=agent_name)
+        else:
+            self._logger.debug("unregister for unknown agent (no-op)", agent=agent_name)
+
+    def increment_failures(self, agent_name: str) -> int:
+        """Increment the consecutive failure count for an agent.
+
+        Returns the new count, or 0 if the agent is unknown.
+        """
+        with self._lock:
+            agent = self._agents.get(agent_name)
+            if agent is None:
+                return 0
+            agent["consecutive_failures"] = agent.get("consecutive_failures", 0) + 1
+            new_count = agent["consecutive_failures"]
+        self._logger.debug("failure incremented", agent=agent_name, consecutive_failures=new_count)
+        return new_count
+
+    def clear_failures(self, agent_name: str) -> None:
+        """Reset consecutive failure count to zero for an agent.
+
+        No-op if the agent is unknown.
+        """
+        with self._lock:
+            agent = self._agents.get(agent_name)
+            if agent is None:
+                return
+            agent["consecutive_failures"] = 0
+        self._logger.debug("failures cleared", agent=agent_name)
+
     def reap_dead_agents(self, timeout_seconds: float = 60.0) -> list[str]:
         """Remove agents that haven't sent a heartbeat within the timeout."""
         now = time.time()

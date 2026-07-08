@@ -425,3 +425,88 @@ class TestExecuteMissionResultStructure:
 
         assert result["executed"] == 0
         assert result["success"] is True
+
+
+# ---------------------------------------------------------------------------
+# Mission 7.3 — Heartbeat lifecycle for all ChiefAgent orchestration paths
+# ---------------------------------------------------------------------------
+
+
+class TestChiefAgentRunHeartbeats:
+    def test_heartbeat_on_run_start_and_complete(self):
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        ctx = SharedContext()
+        ctx.set("task", "run heartbeat test")
+
+        def simulate_workers():
+            time.sleep(0.1)
+            plan_task = pool.steal_task("planner_1", ["planner"])
+            assert plan_task is not None
+            sub_tasks = [{"id": "t1", "depends_on": []}]
+            pool.complete_task(plan_task["id"], result=sub_tasks)
+            time.sleep(0.1)
+            t1 = pool.steal_task("engineer_1", ["llm"])
+            assert t1 is not None
+            pool.complete_task(t1["id"], result="done")
+
+        worker_thread = threading.Thread(target=simulate_workers)
+        worker_thread.start()
+        result = chief.run(ctx)
+        worker_thread.join(timeout=2.0)
+
+        assert result["success"] is True
+
+        # FleetManager should have received running and completed heartbeats
+        state = fm.get_agent_state("chief")
+        assert state is not None
+        # Terminal status should be completed
+        assert state["status"] == "completed"
+        assert state["load"] == 0
+
+
+class TestChiefAgentCancelExecutionHeartbeats:
+    def test_heartbeat_on_cancel_execution(self):
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        fm = FleetManager(msg)
+        chief = ChiefAgent(pool, resolver, fleet_manager=fm)
+
+        # Submit a dummy mission to create pending state
+        graph = _make_graph(_make_ready_mission("A"))
+
+        def simulate_agent():
+            time.sleep(0.5)
+            task = pool.steal_task("agent_1", ["llm"])
+            assert task is not None
+            mission = task["data"]
+            mission.transition(MissionStatus.RUNNING)
+            mission.transition(MissionStatus.VERIFYING)
+            mission.transition(MissionStatus.COMPLETED)
+            pool.complete_task(task["id"], result={"success": True})
+
+        t = threading.Thread(target=simulate_agent)
+        t.start()
+
+        # Wait for task to be submitted
+        time.sleep(0.2)
+
+        # Cancel while execution is in progress
+        cancel_result = chief.cancel_execution()
+
+        t.join(timeout=2.0)
+
+        assert cancel_result["success"] is True
+        assert cancel_result["cancelled_count"] >= 0
+
+        # FleetManager should have received cancelled heartbeat
+        state = fm.get_agent_state("chief")
+        assert state is not None
+        # Terminal status should be cancelled
+        assert state["status"] == "cancelled"
+        assert state["load"] == 0

@@ -6,6 +6,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agents.chief_agent import ChiefAgent
+from agents.planner_agent import PlannerAgent
+from agents.research_agent import ResearchAgent
+from agents.reviewer_agent import ReviewerAgent
+from agents.engineer import EngineerAgent
+from brain.agent_registry import AgentRegistry
 from brain.dependency_resolver import DependencyResolver
 from brain.messaging import Messaging
 from brain.mission import (
@@ -16,6 +21,7 @@ from brain.mission import (
     MissionID,
     MissionStatus,
 )
+from brain.scheduler import Scheduler
 from brain.shared_context import SharedContext
 from brain.work_pool import WorkPool
 
@@ -356,3 +362,196 @@ class TestExecuteMissionResultStructure:
 
         assert result["executed"] == 0
         assert result["success"] is True
+
+
+# ---------------------------------------------------------------------------
+# Mission 7.2 — Central orchestration: pipeline dispatch via Scheduler
+# ---------------------------------------------------------------------------
+
+
+class TestChiefAgentPipelineOrchestration:
+    def test_run_pipeline_dispatches_through_scheduler(self, monkeypatch):
+        """run_pipeline chains agents via Scheduler.run_pipeline."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "review passed"},
+        )
+        monkeypatch.setattr(
+            "agents.engineer.EngineerAgent.run",
+            lambda self, ctx: {"success": True, "goal": {"id": "OK", "status": "completed"}, "errors": []},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        registry = AgentRegistry()
+        scheduler = Scheduler(registry, msg)
+
+        chief = ChiefAgent(pool, resolver, registry=registry, scheduler=scheduler)
+
+        ctx = SharedContext()
+        ctx.set("task", "test task for pipeline")
+
+        result = chief.run_pipeline(ctx)
+        assert result["success"] is True
+        assert result["task"] == "test task for pipeline"
+        assert result["pipeline"] == ["planner", "researcher", "reviewer", "engineer"]
+
+    def test_run_pipeline_without_task_fails_cleanly(self):
+        """run_pipeline returns an error when no task is in the context."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        chief = ChiefAgent(pool, resolver)
+
+        ctx = SharedContext()  # No task set
+        result = chief.run_pipeline(ctx)
+        assert result["success"] is False
+        assert "No task" in result["errors"][0]
+
+    def test_run_pipeline_custom_order(self, monkeypatch):
+        """run_pipeline accepts a custom agent order."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "pass"},
+        )
+        monkeypatch.setattr(
+            "agents.engineer.EngineerAgent.run",
+            lambda self, ctx: {"success": True, "goal": {"id": "OK", "status": "completed"}, "errors": []},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        registry = AgentRegistry()
+        scheduler = Scheduler(registry, msg)
+
+        chief = ChiefAgent(pool, resolver, registry=registry, scheduler=scheduler)
+
+        ctx = SharedContext()
+        ctx.set("task", "custom order task")
+
+        custom_pipeline = ["planner", "engineer"]
+        result = chief.run_pipeline(ctx, pipeline=custom_pipeline)
+        assert result["success"] is True
+        assert result["pipeline"] == custom_pipeline
+
+    def test_run_pipeline_registers_agents_once(self):
+        """_register_agents is idempotent — re-calling does not crash."""
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        chief = ChiefAgent(pool, resolver)
+
+        chief._register_agents()
+        count_before = len(chief._registry.list_all())
+        chief._register_agents()
+        count_after = len(chief._registry.list_all())
+        assert count_after == count_before
+        assert "planner" in chief._registry
+        assert "engineer" in chief._registry
+
+    def test_execute_convenience_method(self, monkeypatch):
+        """ChiefAgent.execute creates a context and runs the pipeline."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "review passed"},
+        )
+        monkeypatch.setattr(
+            "agents.engineer.EngineerAgent.run",
+            lambda self, ctx: {"success": True, "goal": {"id": "OK", "status": "completed"}, "errors": []},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        registry = AgentRegistry()
+        scheduler = Scheduler(registry, msg)
+
+        chief = ChiefAgent(pool, resolver, registry=registry, scheduler=scheduler)
+
+        result = chief.execute("convenience test task")
+        assert result["success"] is True
+        assert result["task"] == "convenience test task"
+
+    def test_pipeline_result_structure(self, monkeypatch):
+        """Pipeline result contains all expected keys."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "review passed"},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        registry = AgentRegistry()
+        scheduler = Scheduler(registry, msg)
+
+        chief = ChiefAgent(pool, resolver, registry=registry, scheduler=scheduler)
+        result = chief.execute("structure test")
+
+        for key in ("success", "task", "goal", "errors", "pipeline"):
+            assert key in result, f"Missing key: {key}"
+
+    def test_default_pipeline_order_is_correct(self):
+        """DEFAULT_PIPELINE matches the standard agent sequence."""
+        expected = ["planner", "researcher", "reviewer", "engineer"]
+        assert ChiefAgent.DEFAULT_PIPELINE == expected
+
+    def test_no_optional_args_still_works(self, monkeypatch):
+        """ChiefAgent constructor works without registry or scheduler."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "review passed"},
+        )
+        monkeypatch.setattr(
+            "agents.engineer.EngineerAgent.run",
+            lambda self, ctx: {"success": True, "goal": {"id": "OK", "status": "completed"}, "errors": []},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        chief = ChiefAgent(pool, resolver)
+
+        ctx = SharedContext()
+        ctx.set("task", "no-optional-args task")
+        result = chief.run_pipeline(ctx)
+        assert result["success"] is True
+
+    def test_backward_compat_run_still_works_alongside_pipeline(self, monkeypatch):
+        """Existing run() continues to work after pipeline methods were added."""
+        monkeypatch.setattr(
+            "agents.reviewer_agent.ReviewerAgent.run",
+            lambda self, ctx: {"success": True, "result": "review passed"},
+        )
+        msg = Messaging()
+        pool = WorkPool(msg)
+        resolver = DependencyResolver()
+        ctx = SharedContext()
+        ctx.set("task", "backward compat test")
+
+        chief = ChiefAgent(pool, resolver, ctx, msg)
+
+        def simulate_workers():
+            import time
+            time.sleep(0.1)
+            plan_task = pool.steal_task("planner_1", ["planner"])
+            assert plan_task is not None
+            sub_tasks = [{"id": "t1", "depends_on": []}]
+            pool.complete_task(plan_task["id"], result=sub_tasks)
+            time.sleep(0.1)
+            t1 = pool.steal_task("engineer_1", ["llm"])
+            assert t1 is not None
+            pool.complete_task(t1["id"], result="done")
+
+        worker_thread = threading.Thread(target=simulate_workers)
+        worker_thread.start()
+        result = chief.run(ctx)
+        worker_thread.join(timeout=2.0)
+        assert result["success"] is True
+
+        # Pipeline must also work on the same instance.
+        monkeypatch.setattr(
+            "agents.engineer.EngineerAgent.run",
+            lambda self, ctx: {"success": True, "goal": {"id": "OK", "status": "completed"}, "errors": []},
+        )
+        pipeline_ctx = SharedContext()
+        pipeline_ctx.set("task", "pipeline after run")
+        pipeline_result = chief.run_pipeline(pipeline_ctx)
+        assert pipeline_result["success"] is True
