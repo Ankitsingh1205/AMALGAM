@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "generated_at": "2026-07-08T10:37:53.700129+00:00",
+  "generated_at": "2026-07-08T10:54:00.709497+00:00",
   "repository_root": "C:\\AMALGAM",
   "branch": "core/amalgam-core-v1",
-  "head": "c305e5d29a246db06b57cee245087c049d44f31d",
+  "head": "9dd9f13bd98c2d5493d36faea210437926f617f5",
   "file_count": 275,
   "files": {
     "agents/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
