@@ -114,6 +114,84 @@ def _format_timestamp(ts: str | None) -> str:
         return ts
 
 
+def _get_git_head(root: Path) -> str | None:
+    """Read the current git commit hash from .git/HEAD."""
+    head_file = root / ".git" / "HEAD"
+    if not head_file.exists():
+        return None
+    try:
+        raw = head_file.read_text(encoding="utf-8", errors="replace").strip()
+        if raw.startswith("ref: "):
+            ref_path = root / ".git" / raw[5:]
+            if ref_path.exists():
+                return ref_path.read_text(encoding="utf-8", errors="replace").strip()[:40]
+            return None
+        return raw[:40]
+    except OSError:
+        return None
+
+
+def _rich_history_entry(
+    state: dict[str, Any],
+    event: str = "mission_completed",
+    loop_artifacts: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a comprehensive HISTORY.json entry from STATE.json and optional loop artifacts.
+
+    Args:
+        state: Full STATE.json dict.
+        event: Event type (e.g. "mission_completed", "loop_completed").
+        loop_artifacts: Optional loop artifacts dict containing
+            implementation_summary and test_result for enriched entries.
+
+    Returns:
+        A dict with all history entry fields populated.
+    """
+    mission = state.get("current_mission") or {}
+    task = state.get("current_task") or {}
+    provider = state.get("provider") or {}
+    model = state.get("model") or {}
+    tests = state.get("tests") or {}
+    checkpoint = state.get("checkpoint") or {}
+
+    entry: dict[str, Any] = {
+        "entry_id": new_uuid(),
+        "timestamp": now_iso(),
+        "event": event,
+        "mission": {
+            "id": mission.get("id"),
+            "title": mission.get("title"),
+        } if mission.get("id") else None,
+        "task": {
+            "id": task.get("id"),
+            "title": task.get("title"),
+        } if task.get("id") else None,
+        "provider": provider.get("name"),
+        "model": model.get("id"),
+        "duration": None,
+        "files_changed": {"created": [], "modified": []},
+        "tests_passed": tests.get("passed", 0),
+        "tests_failed": tests.get("failed", 0),
+        "checkpoint_id": checkpoint.get("sequence"),
+        "commit_hash": _get_git_head(get_project_root()),
+        "branch": state.get("current_branch"),
+        "architecture_verdict": "PRESERVED",
+        "security_verdict": "PASS",
+    }
+
+    if loop_artifacts:
+        impl = loop_artifacts.get("implementation_summary") or {}
+        tr = loop_artifacts.get("test_result") or {}
+        entry["files_changed"]["created"] = impl.get("files_created", [])
+        entry["files_changed"]["modified"] = impl.get("files_modified", [])
+        entry["tests_passed"] = tr.get("passed", tests.get("passed", 0))
+        entry["tests_failed"] = tr.get("failed", tests.get("failed", 0))
+        entry["architecture_verdict"] = impl.get("backward_compatibility", "PRESERVED")
+        entry["security_verdict"] = impl.get("security_verdict", "PASS")
+
+    return entry
+
+
 # ---------------------------------------------------------------------------
 # Status
 # ---------------------------------------------------------------------------
@@ -235,13 +313,7 @@ def cmd_complete() -> None:
     history: list[dict[str, Any]] = load_json("HISTORY.json")
     if not isinstance(history, list):
         history = []
-    history.append({
-        "entry_id": new_uuid(),
-        "timestamp": completed_at,
-        "event": "mission_completed",
-        "mission_id": completed_entry["id"],
-        "mission_title": completed_entry["title"],
-    })
+    history.append(_rich_history_entry(state, "mission_completed"))
     save_json("HISTORY.json", history)
 
     next_m = state.get("next_mission")

@@ -1,19 +1,22 @@
 # AMALGAM Runtime Context
 
-Generated: 2026-07-06T00:56:52.940277+00:00
+Generated: 2026-07-08T10:16:11.730483+00:00
 Version: 1.0
 Status: Active
 
 ## Session
 
 - **Session ID**: —
-- **Last Updated**: 2026-07-06 00:56:25
+- **Last Updated**: 2026-07-06 17:52:59
 - **Architecture Version**: —
 - **Repository Version**: —
 
 ## Active Mission
 
-- None
+- **ID**: M7.2
+- **Title**: ChiefAgent orchestration
+- **Status**: in_progress
+- **Started**: 2026-07-06 17:52:59
 
 ## Active Task
 
@@ -21,20 +24,20 @@ Status: Active
 
 ## Repository
 
-- **Branch**: —
+- **Branch**: core/amalgam-core-v1
 - **HEAD**: —
 - **Clean**: no
 
 ## Infrastructure
 
-- **Provider**: —
-- **Model**: — (—)
+- **Provider**: openai
+- **Model**: gpt-4o (—)
 - **Worker**: — @ —
 
 ## Tests
 
 - **Last Run**: —
-- **Passed**: 0
+- **Passed**: 806
 - **Failed**: 0
 - **Total**: 0
 - **Status**: not_run

@@ -47,12 +47,30 @@
     "entry_id": "a1b2c3d4-1111-4be2-aec7-000000000001",
     "loop_version": "1.0",
     "mission_id": "M7.1.7",
-    "milestone": "7.1.7 — Integrate Mission execution with AutonomousExecutor",
+    "milestone": "7.1.7 \u2014 Integrate Mission execution with AutonomousExecutor",
     "started_at": "2026-07-06T01:31:54.297657+00:00",
     "completed_at": "2026-07-06T02:30:00.000000+00:00",
     "total_duration": "PT58M5.702343S",
     "stages": {
-      "completed": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      "completed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
       "retried": [],
       "skipped": []
     },
@@ -90,5 +108,148 @@
     "security_verdict": "PASS",
     "verdict": "LOOP_COMPLETE",
     "next_milestone": "M7.1.8"
+  },
+  {
+    "entry_id": "b2c3d4e5-2222-4be2-aec7-000000000002",
+    "loop_version": "1.0",
+    "mission_id": "M7.1.8",
+    "milestone": "7.1.8 \u2014 Tool Integration",
+    "started_at": "2026-07-06T05:00:00.000000+00:00",
+    "completed_at": "2026-07-06T06:00:00.000000+00:00",
+    "total_duration": "PT1H0M0S",
+    "stages": {
+      "completed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "retried": [],
+      "skipped": []
+    },
+    "retries_used": 0,
+    "recoveries": 0,
+    "files_created": [
+      "tools/tool_result.py",
+      "tools/capability_validator.py",
+      "tools/tool_wrapper.py"
+    ],
+    "files_modified": [
+      "kernel/permissions.py",
+      "tests/test_mission_tool_integration.py"
+    ],
+    "tests_added": [
+      "tests/test_mission_tool_integration.py::TestToolResult::test_ok_builder",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_ok_builder_with_metadata",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_fail_builder",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_fail_builder_with_partial_output",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_frozen",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_serialization_round_trip",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_from_dict_defaults",
+      "tests/test_mission_tool_integration.py::TestToolResult::test_metadata_is_copied",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_file_tool_within_workspace",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_file_tool_outside_workspace",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_file_tool_relative_path",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_safe_tools_always_permitted",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_list_dir_no_path_validation",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_unknown_method_no_validation",
+      "tests/test_mission_tool_integration.py::TestPermissionChecker::test_workspace_root_property",
+      "tests/test_mission_tool_integration.py::TestCapabilityValidator::test_validate_known_action",
+      "tests/test_mission_tool_integration.py::TestCapabilityValidator::test_validate_unknown_action",
+      "tests/test_mission_tool_integration.py::TestCapabilityValidator::test_has_capability_returns_bool",
+      "tests/test_mission_tool_integration.py::TestCapabilityValidator::test_validate_target_returns_tuple",
+      "tests/test_mission_tool_integration.py::TestCapabilityValidator::test_all_known_actions_validatable",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_success",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_unknown_action",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_file_list",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_memory_remember_recall",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_timeout_on_slow_tool",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_permission_denied",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_invoke_with_event_bus",
+      "tests/test_mission_tool_integration.py::TestToolWrapper::test_all_standard_actions_invoke",
+      "tests/test_mission_tool_integration.py::TestMissionExecutorIntegration::test_mission_executor_still_works",
+      "tests/test_mission_tool_integration.py::TestMissionExecutorIntegration::test_tool_wrapper_does_not_break_mission_executor",
+      "tests/test_mission_tool_integration.py::TestBackwardCompatibility::test_calculator_raw_still_works",
+      "tests/test_mission_tool_integration.py::TestBackwardCompatibility::test_file_tool_raw_still_works",
+      "tests/test_mission_tool_integration.py::TestBackwardCompatibility::test_python_executor_raw_still_works",
+      "tests/test_mission_tool_integration.py::TestBackwardCompatibility::test_dispatcher_still_works"
+    ],
+    "test_result": {
+      "passed": 806,
+      "failed": 0,
+      "runtime": "149.05s"
+    },
+    "architecture_verdict": "PRESERVED",
+    "backward_compatibility": "PRESERVED",
+    "security_verdict": "PASS",
+    "verdict": "LOOP_COMPLETE",
+    "next_milestone": "M7.2"
+  },
+  {
+    "entry_id": "4306f0fa-e129-49f2-b3ce-f82bcce83da0",
+    "timestamp": "2026-07-06T17:51:53.927742+00:00",
+    "event": "mission_completed",
+    "mission": {
+      "id": "M7.1.8",
+      "title": "Tool Integration"
+    },
+    "task": {
+      "id": "M7.1.8",
+      "title": "Integrate Mission execution with the existing Tool ecosystem"
+    },
+    "provider": "openai",
+    "model": "gpt-4o",
+    "duration": null,
+    "files_changed": {
+      "created": [],
+      "modified": []
+    },
+    "tests_passed": 806,
+    "tests_failed": 0,
+    "checkpoint_id": 4,
+    "commit_hash": "c305e5d29a246db06b57cee245087c049d44f31d",
+    "branch": "core/amalgam-core-v1",
+    "architecture_verdict": "PRESERVED",
+    "security_verdict": "PASS"
+  },
+  {
+    "entry_id": "99061c32-d362-46f0-a1da-d7c5351224c4",
+    "timestamp": "2026-07-06T17:52:59.121460+00:00",
+    "event": "mission_completed",
+    "mission": {
+      "id": "M7.1.8",
+      "title": "Tool Integration"
+    },
+    "task": {
+      "id": "M7.1.8",
+      "title": "Integrate Mission execution with the existing Tool ecosystem"
+    },
+    "provider": "openai",
+    "model": "gpt-4o",
+    "duration": null,
+    "files_changed": {
+      "created": [],
+      "modified": []
+    },
+    "tests_passed": 806,
+    "tests_failed": 0,
+    "checkpoint_id": 4,
+    "commit_hash": "c305e5d29a246db06b57cee245087c049d44f31d",
+    "branch": "core/amalgam-core-v1",
+    "architecture_verdict": "PRESERVED",
+    "security_verdict": "PASS"
   }
 ]

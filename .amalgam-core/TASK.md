@@ -1,24 +1,22 @@
 # Current Task
 
-| Field | Value |
-|-------|-------|
-| Current Mission | Mission 7.1.7 — Mission Execution + AutonomousExecutor Integration |
-| Current Milestone | M7.1.7 |
-| Status | COMPLETED |
-| Branch | `core/amalgam-core-v1` |
-| Test Count | 772 (all passing) |
+No active task.
 
-# Completion Summary
 
-- MissionExecutor integrates with AutonomousExecutor via status_observer callback
-- Cancellation support added to MissionExecutor (cancel method, _cancelled flag)
-- ChiefAgent orchestration API: execute_graph, resume_execution, cancel_execution, graceful_shutdown
-- All 772 tests pass with zero regressions
-- Layer boundaries preserved (brain -> kernel -> services/tools -> config)
-- No new files created — existing architecture reused
+# Task State
 
-# Session Notes
+- **Status**: pending
+- **Stage**: idle
+- **Branch**: core/amalgam-core-v1
 
-- Integration was already implemented in uncommitted changes
-- Full test suite verified: 772 passed in 138.51s
-- Project state files updated via Context Engine
+# Test Baseline
+
+- **Passed**: 806
+- **Failed**: 0
+- **Total**: 0
+- **Status**: not_run
+
+# Linked Mission
+
+- **M7.2**: ChiefAgent orchestration
+- **Status**: in_progress

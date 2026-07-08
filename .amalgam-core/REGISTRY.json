@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-07-06T00:56:52.534122+00:00",
+  "generated_at": "2026-07-08T10:37:02.359226+00:00",
   "components": {
     "agents": [
       {
@@ -51,6 +51,11 @@
         "public_modules": [],
         "dependencies": [
           "agents.base_agent",
+          "agents.engineer",
+          "agents.planner_agent",
+          "agents.research_agent",
+          "agents.reviewer_agent",
+          "brain.agent_registry",
           "brain.capability_router",
           "brain.dependency_resolver",
           "brain.fleet_manager",
@@ -62,12 +67,13 @@
           "brain.mission.mission_status",
           "brain.mission.persistence",
           "brain.planner.planner",
+          "brain.scheduler",
           "brain.shared_context",
           "brain.work_pool"
         ],
         "children": [],
         "parent_package": "agents",
-        "last_modified": "2026-07-05T21:14:39.027700+00:00"
+        "last_modified": "2026-07-07T20:08:12.912042+00:00"
       },
       {
         "name": "engineer",
@@ -367,7 +373,7 @@
         ],
         "children": [],
         "parent_package": "brain",
-        "last_modified": "2026-07-01T12:06:17.297454+00:00"
+        "last_modified": "2026-07-07T20:04:45.340288+00:00"
       },
       {
         "name": "goal",
@@ -995,10 +1001,12 @@
         "path": "kernel/permissions.py",
         "category": "kernel",
         "public_modules": [],
-        "dependencies": [],
+        "dependencies": [
+          "config"
+        ],
         "children": [],
         "parent_package": "kernel",
-        "last_modified": "2026-06-27T14:34:14.853680+00:00"
+        "last_modified": "2026-07-06T12:37:21.372057+00:00"
       },
       {
         "name": "scheduler",
@@ -1181,24 +1189,30 @@
         "public_modules": [
           "tools.base_tool",
           "tools.calculator",
+          "tools.capability_validator",
           "tools.file_tool",
           "tools.internet_tool",
           "tools.memory_tool",
           "tools.python_executor",
-          "tools.tool_registry"
+          "tools.tool_registry",
+          "tools.tool_result",
+          "tools.tool_wrapper"
         ],
         "dependencies": [],
         "children": [
           "base_tool.py",
           "calculator.py",
+          "capability_validator.py",
           "file_tool.py",
           "internet_tool.py",
           "memory_tool.py",
           "python_executor.py",
-          "tool_registry.py"
+          "tool_registry.py",
+          "tool_result.py",
+          "tool_wrapper.py"
         ],
         "parent_package": null,
-        "last_modified": "2026-06-30T06:48:52.353211+00:00"
+        "last_modified": "2026-07-06T12:45:53.720568+00:00"
       },
       {
         "name": "base_tool",
@@ -1221,6 +1235,19 @@
         "children": [],
         "parent_package": "tools",
         "last_modified": "2026-06-27T19:40:18.626344+00:00"
+      },
+      {
+        "name": "capability_validator",
+        "path": "tools/capability_validator.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "kernel.action_registry",
+          "tools.tool_registry"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-07-06T12:40:54.180168+00:00"
       },
       {
         "name": "file_tool",
@@ -1285,6 +1312,33 @@
         "children": [],
         "parent_package": "tools",
         "last_modified": "2026-06-29T04:18:41.009799+00:00"
+      },
+      {
+        "name": "tool_result",
+        "path": "tools/tool_result.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-07-06T12:28:31.530309+00:00"
+      },
+      {
+        "name": "tool_wrapper",
+        "path": "tools/tool_wrapper.py",
+        "category": "tools",
+        "public_modules": [],
+        "dependencies": [
+          "brain.mission.event",
+          "brain.mission.event_types",
+          "config",
+          "kernel.permissions",
+          "tools.capability_validator",
+          "tools.tool_result"
+        ],
+        "children": [],
+        "parent_package": "tools",
+        "last_modified": "2026-07-07T14:56:35.484001+00:00"
       }
     ],
     "workspace": [
@@ -1420,19 +1474,23 @@
           "tests.test_autonomous_executor",
           "tests.test_autonomous_regression",
           "tests.test_base_agent",
+          "tests.test_bootstrap",
           "tests.test_brain",
           "tests.test_calculator",
           "tests.test_capability_router_extended",
           "tests.test_chief_agent",
           "tests.test_chief_agent_mission",
           "tests.test_config",
+          "tests.test_context",
           "tests.test_dependency_resolver",
           "tests.test_diagnostics",
+          "tests.test_engine",
           "tests.test_engineer_agent",
           "tests.test_evaluator",
           "tests.test_execution_memory",
           "tests.test_executor",
           "tests.test_file_tool",
+          "tests.test_fingerprint",
           "tests.test_fleet_manager",
           "tests.test_fleet_manager_integration",
           "tests.test_goal",
@@ -1450,6 +1508,7 @@
           "tests.test_knowledge_search",
           "tests.test_knowledge_symbols",
           "tests.test_logger",
+          "tests.test_loop",
           "tests.test_memory_regression",
           "tests.test_memory_tool",
           "tests.test_messaging",
@@ -1468,7 +1527,9 @@
           "tests.test_pipeline",
           "tests.test_planner",
           "tests.test_planner_agent",
+          "tests.test_provider",
           "tests.test_python_executor",
+          "tests.test_recovery",
           "tests.test_reflection",
           "tests.test_registry",
           "tests.test_research_agent",
@@ -1499,19 +1560,23 @@
           "test_autonomous_executor.py",
           "test_autonomous_regression.py",
           "test_base_agent.py",
+          "test_bootstrap.py",
           "test_brain.py",
           "test_calculator.py",
           "test_capability_router_extended.py",
           "test_chief_agent.py",
           "test_chief_agent_mission.py",
           "test_config.py",
+          "test_context.py",
           "test_dependency_resolver.py",
           "test_diagnostics.py",
+          "test_engine.py",
           "test_engineer_agent.py",
           "test_evaluator.py",
           "test_execution_memory.py",
           "test_executor.py",
           "test_file_tool.py",
+          "test_fingerprint.py",
           "test_fleet_manager.py",
           "test_fleet_manager_integration.py",
           "test_goal.py",
@@ -1529,6 +1594,7 @@
           "test_knowledge_search.py",
           "test_knowledge_symbols.py",
           "test_logger.py",
+          "test_loop.py",
           "test_memory_regression.py",
           "test_memory_tool.py",
           "test_messaging.py",
@@ -1547,7 +1613,9 @@
           "test_pipeline.py",
           "test_planner.py",
           "test_planner_agent.py",
+          "test_provider.py",
           "test_python_executor.py",
+          "test_recovery.py",
           "test_reflection.py",
           "test_registry.py",
           "test_research_agent.py",
@@ -1570,7 +1638,7 @@
           "test_workspace_tree.py"
         ],
         "parent_package": null,
-        "last_modified": "2026-07-06T00:45:12.276665+00:00"
+        "last_modified": "2026-07-06T17:51:29.437924+00:00"
       },
       {
         "name": "test_action_registry",
@@ -1667,6 +1735,16 @@
         "last_modified": "2026-07-01T09:22:09.217847+00:00"
       },
       {
+        "name": "test_bootstrap",
+        "path": "tests/test_bootstrap.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T01:48:31.794938+00:00"
+      },
+      {
         "name": "test_brain",
         "path": "tests/test_brain.py",
         "category": "tests",
@@ -1729,15 +1807,21 @@
         "public_modules": [],
         "dependencies": [
           "agents.chief_agent",
+          "agents.engineer",
+          "agents.planner_agent",
+          "agents.research_agent",
+          "agents.reviewer_agent",
+          "brain.agent_registry",
           "brain.dependency_resolver",
           "brain.messaging",
           "brain.mission",
+          "brain.scheduler",
           "brain.shared_context",
           "brain.work_pool"
         ],
         "children": [],
         "parent_package": "tests",
-        "last_modified": "2026-07-03T20:54:05.334691+00:00"
+        "last_modified": "2026-07-07T16:33:15.226669+00:00"
       },
       {
         "name": "test_config",
@@ -1750,6 +1834,16 @@
         "children": [],
         "parent_package": "tests",
         "last_modified": "2026-06-29T04:21:51.496238+00:00"
+      },
+      {
+        "name": "test_context",
+        "path": "tests/test_context.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T01:39:31.365746+00:00"
       },
       {
         "name": "test_dependency_resolver",
@@ -1774,6 +1868,16 @@
         "children": [],
         "parent_package": "tests",
         "last_modified": "2026-06-29T04:21:51.498239+00:00"
+      },
+      {
+        "name": "test_engine",
+        "path": "tests/test_engine.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T17:52:08.662915+00:00"
       },
       {
         "name": "test_engineer_agent",
@@ -1844,6 +1948,16 @@
         "last_modified": "2026-06-27T20:39:37.953679+00:00"
       },
       {
+        "name": "test_fingerprint",
+        "path": "tests/test_fingerprint.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T01:47:46.465611+00:00"
+      },
+      {
         "name": "test_fleet_manager",
         "path": "tests/test_fleet_manager.py",
         "category": "tests",
@@ -1854,7 +1968,7 @@
         ],
         "children": [],
         "parent_package": "tests",
-        "last_modified": "2026-07-01T12:08:17.141917+00:00"
+        "last_modified": "2026-07-07T20:09:01.360706+00:00"
       },
       {
         "name": "test_fleet_manager_integration",
@@ -1872,7 +1986,7 @@
         ],
         "children": [],
         "parent_package": "tests",
-        "last_modified": "2026-07-05T20:24:00.844527+00:00"
+        "last_modified": "2026-07-07T20:45:48.816175+00:00"
       },
       {
         "name": "test_goal",
@@ -2062,6 +2176,16 @@
         "last_modified": "2026-06-29T04:21:51.497240+00:00"
       },
       {
+        "name": "test_loop",
+        "path": "tests/test_loop.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T01:48:37.602096+00:00"
+      },
+      {
         "name": "test_memory_regression",
         "path": "tests/test_memory_regression.py",
         "category": "tests",
@@ -2213,11 +2337,21 @@
         "public_modules": [],
         "dependencies": [
           "brain.mission",
-          "brain.mission.mission_executor"
+          "brain.mission.mission_executor",
+          "config",
+          "kernel.dispatcher",
+          "kernel.permissions",
+          "kernel.task",
+          "tools.calculator",
+          "tools.capability_validator",
+          "tools.file_tool",
+          "tools.python_executor",
+          "tools.tool_result",
+          "tools.tool_wrapper"
         ],
         "children": [],
         "parent_package": "tests",
-        "last_modified": "2026-07-03T18:48:28.913006+00:00"
+        "last_modified": "2026-07-06T13:56:39.806807+00:00"
       },
       {
         "name": "test_models",
@@ -2304,6 +2438,16 @@
         "last_modified": "2026-07-02T22:44:45.990972+00:00"
       },
       {
+        "name": "test_provider",
+        "path": "tests/test_provider.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T17:36:18.781373+00:00"
+      },
+      {
         "name": "test_python_executor",
         "path": "tests/test_python_executor.py",
         "category": "tests",
@@ -2316,6 +2460,16 @@
         "children": [],
         "parent_package": "tests",
         "last_modified": "2026-06-27T20:39:24.315677+00:00"
+      },
+      {
+        "name": "test_recovery",
+        "path": "tests/test_recovery.py",
+        "category": "tests",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "tests",
+        "last_modified": "2026-07-06T01:58:16.109742+00:00"
       },
       {
         "name": "test_reflection",
@@ -2583,16 +2737,28 @@
         "public_modules": [
           "scripts.bootstrap",
           "scripts.context",
+          "scripts.engine",
+          "scripts.fingerprint",
+          "scripts.generate_source_dump",
+          "scripts.loop",
+          "scripts.provider",
+          "scripts.recovery",
           "scripts.registry"
         ],
         "dependencies": [],
         "children": [
           "bootstrap.py",
           "context.py",
+          "engine.py",
+          "fingerprint.py",
+          "generate_source_dump.py",
+          "loop.py",
+          "provider.py",
+          "recovery.py",
           "registry.py"
         ],
         "parent_package": null,
-        "last_modified": "2026-07-05T21:49:06.532429+00:00"
+        "last_modified": "2026-07-07T14:45:59.858211+00:00"
       },
       {
         "name": "bootstrap",
@@ -2612,7 +2778,67 @@
         "dependencies": [],
         "children": [],
         "parent_package": "scripts",
-        "last_modified": "2026-07-06T00:32:08.450562+00:00"
+        "last_modified": "2026-07-06T01:38:18.813653+00:00"
+      },
+      {
+        "name": "engine",
+        "path": "scripts/engine.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T17:50:53.614637+00:00"
+      },
+      {
+        "name": "fingerprint",
+        "path": "scripts/fingerprint.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T01:33:25.377676+00:00"
+      },
+      {
+        "name": "generate_source_dump",
+        "path": "scripts/generate_source_dump.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-07T14:45:59.858211+00:00"
+      },
+      {
+        "name": "loop",
+        "path": "scripts/loop.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-06T01:38:34.056189+00:00"
+      },
+      {
+        "name": "provider",
+        "path": "scripts/provider.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-07T14:56:34.128106+00:00"
+      },
+      {
+        "name": "recovery",
+        "path": "scripts/recovery.py",
+        "category": "scripts",
+        "public_modules": [],
+        "dependencies": [],
+        "children": [],
+        "parent_package": "scripts",
+        "last_modified": "2026-07-07T14:56:36.952940+00:00"
       },
       {
         "name": "registry",

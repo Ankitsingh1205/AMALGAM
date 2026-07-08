@@ -1962,6 +1962,30 @@ Wait for the next task.
 
 ---
 
+# API Provider Constraints
+
+Preferred provider: Z.ai (high rate limits, free tier).
+Fallback: NVIDIA (40 req/min limit, use with caution).
+
+## NVIDIA (Only Provider)
+
+Rate limited to 40 req/min, 32 concurrent max.
+- Max 3 parallel requests (safe balance of speed vs rate limits)
+- If 429 errors occur, wait 5s and retry (max 3 retries)
+
+## Tool Timeouts
+
+Set a timeout of at least 300000ms (5 minutes) on every bash or tool call. Long-running operations must not use the default 120s timeout.
+
+## Retry on API Errors
+
+If the provider returns "Too Many Requests", "Internal server error", or "ResourceExhausted":
+1. Wait 5 seconds
+2. Retry up to 3 times with exponential backoff
+3. If all retries fail, report the error and stop
+
+---
+
 # Version History
 
 ## Version 1.0
