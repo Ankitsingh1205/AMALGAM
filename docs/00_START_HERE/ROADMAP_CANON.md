@@ -136,3 +136,53 @@ All eight identifiers above remain **RESERVED**. This document reserves the name
 assigns no objective, deliverable, architecture, documentation, test, or acceptance content to
 any mission. Content may be assigned to a reserved number only by defining that mission under
 the governance and amendment process of PROJECT_CONSTITUTION.md.
+
+---
+
+# ROADMAP AMENDMENT 1 (Mission 7.7 Closure)
+
+Status: Canonical. This amendment supersedes the RESERVED status of the
+entries listed below. All other reservations remain in force.
+
+## Filled reservations
+
+| Mission ID | New status | Delivered as | Reference |
+|---|---|---|---|
+| Mission 7.4 | CLOSED | Repository Stabilization & Truth Baseline | tag `v0.7.4` |
+| Mission 7.5 | CLOSED | Integration: kernel safety path, FleetWorker, CLI mission mode | tag `v0.7.5` |
+| Mission 7.6 | CLOSED | Security Hardening: SEC-001..004 resolved | tag `v0.7.6` |
+| Mission 7.7 | CLOSED | Mission 7 Closure: as-built architecture, e2e demo, completion report | tag `v0.7.7` / `amalgam-core-v1.2-stable` |
+
+**Mission 7 is CLOSED** as "Autonomous Orchestration Substrate — complete
+and verified." Scorecard and verdict:
+`docs/04_MISSIONS/MISSION_7/COMPLETION_REPORT.md`.
+As-built architecture (constitutional cure):
+`docs/00_START_HERE/MISSION_7_MASTER_ARCHITECTURE.md`.
+
+## Mission 8 — DEFINED
+
+- **Mission ID:** Mission 8
+- **Status:** DEFINED (not started)
+- **Title:** The Reasoning Layer — Model Specialization & Intelligent Planning
+- **Depends On:** Mission 7 (closed).
+- **Objective:** Replace the heuristic planning/intent/reflection layers
+  with model-driven reasoning, so the orchestration substrate delivered by
+  Mission 7 is inhabited by actual intelligence. Inherits the unmet
+  Mission 7 criteria (2, 4, 6, 7, 8) as its success criteria.
+- **Scope (high level):**
+  1. LLM-driven decomposition replacing keyword heuristics
+     (PlannerAgent/IntentAnalyzer), with tool-contract system prompts.
+  2. Review as an enforced gate: ReviewerAgent must approve before a
+     mission result is emitted; failed review feeds ReflectionEngine.
+  3. Root-cause recovery: reflection informs strategy change, not just retry.
+  4. Model specialization: fine-tune local models (LoRA/QLoRA) on
+     AMALGAM's own ExecutionMemory traces plus teacher-distilled data
+     for planning, tool routing, and reflection tasks.
+  5. Exit demonstration: one real engineering objective taken to
+     reviewed, working output (Criterion 8).
+- **Constitutional requirement:** MISSION_8_MASTER_ARCHITECTURE.md must be
+  written and frozen BEFORE implementation begins. No exceptions this time.
+
+## Unchanged reservations
+
+Missions 9 and 10 remain RESERVED exactly as specified above.
