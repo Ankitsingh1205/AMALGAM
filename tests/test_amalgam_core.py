@@ -77,7 +77,7 @@ def temp_core(monkeypatch: Any) -> Path:
         core.mkdir()
 
         # Copy the immutable schema so bootstrap does not reject.
-        prod_schema = Path(r"C:\AMALGAM\.amalgam-core\STATE.schema.json")
+        prod_schema = Path(__file__).resolve().parents[1] / ".amalgam-core" / "STATE.schema.json"
         if prod_schema.exists():
             (core / "STATE.schema.json").write_text(
                 prod_schema.read_text(encoding="utf-8"), encoding="utf-8"
@@ -201,7 +201,7 @@ def test_bootstrap_missing_root_file_raises(temp_core: Path) -> None:
 
 def test_registry_scan_discovers_known_categories(temp_core: Path) -> None:
     """Registry scan discovers packages from the real repository."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     components = discover_components(real_root)
     categories = set(components.keys())
     expected = {"agents", "brain", "kernel", "services", "tools", "workspace", "tests", "scripts"}
@@ -211,7 +211,7 @@ def test_registry_scan_discovers_known_categories(temp_core: Path) -> None:
 
 def test_registry_scan_never_hardcodes_nonexistent_dir(temp_core: Path) -> None:
     """providers/ and configs/ do not exist; they are never emitted."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     components = discover_components(real_root)
     assert "providers" not in components, "providers/ does not exist -- must not appear"
     assert "configs" not in components, "configs/ does not exist -- must not appear"
@@ -219,7 +219,7 @@ def test_registry_scan_never_hardcodes_nonexistent_dir(temp_core: Path) -> None:
 
 def test_registry_save_and_load_roundtrip(temp_core: Path) -> None:
     """save_registry writes REGISTRY.json; load_registry reads it back."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     live = discover_components(real_root)
     registry = save_registry(live, verified=True)
     reloaded = load_registry()
@@ -229,7 +229,7 @@ def test_registry_save_and_load_roundtrip(temp_core: Path) -> None:
 
 def test_registry_validate_reports_drift(temp_core: Path) -> None:
     """When REGISTRY.json is stale, validate detects drift."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     live = discover_components(real_root)
     # Persist a stale registry (remove one category).
     stale = dict(live)
@@ -252,7 +252,7 @@ def test_registry_validate_reports_drift(temp_core: Path) -> None:
 
 def test_registry_validate_clean_after_rebuild(temp_core: Path) -> None:
     """After a rebuild (scan), validate finds zero drift."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     live = discover_components(real_root)
     save_registry(live, verified=True)
     path_sets_live = {k: {c["path"] for c in v} for k, v in live.items()}
@@ -266,7 +266,7 @@ def test_registry_validate_clean_after_rebuild(temp_core: Path) -> None:
 
 def test_component_fields_are_fully_populated(temp_core: Path) -> None:
     """A discovered component carries all 8 required metadata fields."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     components = discover_components(real_root)
     sample = components.get("agents", []) or components.get("kernel", [])
     assert sample, "No components discovered to verify fields"
@@ -278,7 +278,7 @@ def test_component_fields_are_fully_populated(temp_core: Path) -> None:
 
 def test_dependencies_of_finds_internal_imports(temp_core: Path) -> None:
     """AST-based dependency extraction on orchestrator_agent.py finds AMALGAM deps."""
-    real_root = Path(r"C:\AMALGAM")
+    real_root = Path(__file__).resolve().parents[1]
     mod = real_root / "agents" / "orchestrator_agent.py"
     deps = dependencies_of(mod, real_root)
     assert "brain.agent_registry" in deps or "agents.engineer" in deps, \

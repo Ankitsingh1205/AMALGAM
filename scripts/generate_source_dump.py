@@ -5,7 +5,7 @@ import sys
 
 EXCLUDE_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "dist", "build", ".pytest_cache", ".claude"}
 INCLUDE_EXT = {".py", ".json", ".yaml", ".yml", ".md", ".toml", ".ini"}
-WORKSPACE = Path(r"C:\AMALGAM")
+WORKSPACE = Path(__file__).resolve().parents[1]
 OUTPUT = WORKSPACE / "amalgam_source_dump.txt"
 
 SEPARATOR = "=" * 78

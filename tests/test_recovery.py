@@ -47,7 +47,7 @@ def temp_core(monkeypatch: pytest.MonkeyPatch) -> Path:
         core = root / ".amalgam-core"
         core.mkdir()
 
-        prod_schema = Path(r"C:\AMALGAM\.amalgam-core\STATE.schema.json")
+        prod_schema = Path(__file__).resolve().parents[1] / ".amalgam-core" / "STATE.schema.json"
         if prod_schema.exists():
             (core / "STATE.schema.json").write_text(
                 prod_schema.read_text(encoding="utf-8"), encoding="utf-8"

@@ -92,7 +92,7 @@ class ResearchAgent(BaseAgent):
         from tools.file_tool import FileTool
         try:
             ft = FileTool()
-            files = ft.list_files(".")
+            files = ft.list_dir(".")
             return {
                 "current_directory": ".",
                 "file_count": len(files) if isinstance(files, list) else 0,
