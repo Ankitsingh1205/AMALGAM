@@ -1,6 +1,6 @@
 [project]
 name = "amalgam-os"
-version = "0.3.0"
+version = "0.7.7"
 description = "AMALGAM OS foundation runtime"
 requires-python = ">=3.10"
 dependencies = [
