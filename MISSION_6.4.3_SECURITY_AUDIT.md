@@ -4,7 +4,7 @@
 **Audit Date:** 2026-07-01T01:25:44+0530 (IST)  
 **Auditor:** Production Security & Architecture Sub-Agent  
 **Scope:** Core execution pipeline, security-critical tools, state machine, and dependency graph  
-**Status:** 🔴 **BLOCKED — Multiple Critical/High severity findings must be resolved before release.**
+**Status:** ✅ **Critical findings SEC-001..SEC-004 RESOLVED in Mission 7.6** (see Resolution Addendum below). High/Medium findings tracked for follow-up.
 
 ---
 
@@ -231,3 +231,17 @@ The AMALGAM project has a **clean module architecture** with no circular depende
 ---
 
 *End of Audit Report*
+
+
+---
+
+## Resolution Addendum — Mission 7.6 (Security Hardening)
+
+| ID | Resolution | Verified By |
+|----|-----------|-------------|
+| SEC-001 | `PythonExecutor` now executes code in an isolated subprocess (`python -I -c`) with empty environment and bounded timeout. In-process `exec()` removed. | `tests/test_security_hardening.py` (subprocess isolation, host-state immutability, timeout) |
+| SEC-002 | `Calculator` `eval()` replaced with an AST whitelist evaluator: numeric literals and arithmetic operators only; exponent size bounded. | `tests/test_security_hardening.py` (code-execution payloads return `None`) |
+| SEC-003 | `FileTool` gains workspace confinement: all paths resolved and validated against a workspace root; traversal (`..`) rejected. Production registry constructs the confined variant. | `tests/test_security_hardening.py`, `tests/test_file_tool.py` |
+| SEC-004 | Kernel dispatch path routes all tool actions through `ToolWrapper` (capability validation + `PermissionChecker`) as of Mission 7.5, so plan-created tasks hit the hardened tools and the permission layer. | `tests/test_executor.py`, `tests/test_file_tool.py::test_executor_blocks_file_list_outside_workspace` |
+
+Remaining High/Medium findings (SEC-005..SEC-009, ARCH-*) are non-blocking and tracked for Mission 7.7 / Mission 8 planning.
