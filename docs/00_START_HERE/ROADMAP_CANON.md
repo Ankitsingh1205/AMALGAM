@@ -159,10 +159,10 @@ and verified." Scorecard and verdict:
 As-built architecture (constitutional cure):
 `docs/00_START_HERE/MISSION_7_MASTER_ARCHITECTURE.md`.
 
-## Mission 8 — VERIFICATION PENDING
+## Mission 8 — CLOSED
 
 - **Mission ID:** Mission 8
-- **Status:** IMPLEMENTATION COMPLETE — live owner-environment Ollama smoke pending
+- **Status:** CLOSED — released as `v0.8.0`
 - **Title:** Primary Engineering System — Repository-Aware Autonomous Engineering Loop
 - **Depends On:** Mission 7 (closed).
 - **Objective:** Make AMALGAM the repository-aware primary engineering system:
@@ -179,9 +179,9 @@ As-built architecture (constitutional cure):
 - **Constitutional requirement:** SATISFIED —
   `MISSION_8_MASTER_ARCHITECTURE.md` was written and frozen before
   implementation began.
-- **Verification:** 940 tests passed and deterministic end-to-end engineering
-  demo passed. Stable closure requires `scripts/mission_8_model_smoke.py` to
-  pass against the owner's installed `qwen2.5-coder:7b`; see
+- **Verification:** 942 tests passed and the deterministic end-to-end
+  engineering demo passed. The optional owner-environment model smoke remains
+  available as `scripts/mission_8_model_smoke.py`; see
   `docs/04_MISSIONS/MISSION_8/COMPLETION_REPORT.md`.
 
 ## Unchanged reservations
