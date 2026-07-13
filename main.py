@@ -13,6 +13,8 @@ and worker execution to the same kernel dispatch path used by the REPL.
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 from brain.brain import Brain
 from kernel.executor import Executor
@@ -172,22 +174,49 @@ def run_mission(goal: str, timeout: float = 300.0) -> dict:
     return result
 
 
+def run_engineering_command(command: str, value: str | None = None) -> dict:
+    """Run Mission 8 repository-aware commands without chat history."""
+    from brain.engineering_controller import EngineeringController
+
+    controller = EngineeringController(Path.cwd())
+    if command == "status":
+        result = controller.status()
+    elif command == "resume":
+        result = controller.resume()
+    elif command == "run":
+        if not value:
+            raise SystemExit("amalgam run requires a goal")
+        result = controller.run(value)
+    elif command == "approve":
+        if not value:
+            raise SystemExit("amalgam approve requires a plan ID")
+        result = controller.approve(value)
+    elif command == "abort":
+        result = controller.abort()
+    else:
+        raise SystemExit(f"unknown mission command: {command}")
+    print(json.dumps(result, indent=2, default=str))
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AMALGAM - local-first autonomous agent OS")
+    parser.add_argument("command", nargs="?", choices=("status", "resume", "run", "approve", "abort"),
+                        help="Mission 8 repository-aware mission control")
+    parser.add_argument("value", nargs="?", help="goal for run, or plan ID for approve")
     parser.add_argument(
-        "--mission",
-        metavar="GOAL",
-        help="run a goal through the multi-agent orchestration stack",
+        "--mission", metavar="GOAL",
+        help="legacy multi-agent mission orchestration",
     )
     parser.add_argument(
-        "--timeout",
-        type=float,
-        default=300.0,
+        "--timeout", type=float, default=300.0,
         help="mission timeout in seconds (default: 300)",
     )
     args = parser.parse_args()
 
-    if args.mission:
+    if args.command:
+        run_engineering_command(args.command, args.value)
+    elif args.mission:
         run_mission(args.mission, timeout=args.timeout)
     else:
         run_interactive()
