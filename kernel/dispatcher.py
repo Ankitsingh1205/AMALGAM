@@ -1,24 +1,31 @@
 from kernel.action_registry import ActionRegistry
+from kernel.permissions import PermissionChecker
 from tools.tool_registry import ToolRegistry
+from tools.tool_wrapper import ToolWrapper
+from tools.capability_validator import CapabilityValidator
 from services.service_registry import ServiceRegistry
 from config import constants
 from services.logger import get_logger
 
-# Frozenset for O(1) membership test — avoids rebuilding a list on every dispatch.
+# Frozenset for O(1) membership test -- avoids rebuilding a list on every dispatch.
 _LLM_ACTIONS = frozenset([constants.ACTION_CHAT, constants.ACTION_GENERATE_CODE])
 
 
 class Dispatcher:
     """Routes tasks to the appropriate tool or service.
 
-    Optimizations (Mission 6.5.2):
-    - LLM action membership test now uses a module-level ``frozenset``
-      (O(1)) instead of a list literal rebuilt on every ``dispatch()`` call.
+    Mission 7.5 integration:
+    - Tool-targeted actions are now dispatched through :class:`ToolWrapper`,
+      gaining capability validation, workspace permission checks, bounded
+      timeout, and bounded retry on the production path (previously the
+      wrapper existed but was only exercised by tests).
+    - The dispatcher no longer prints results (ARCH-005). It returns the
+      raw result; presentation is owned by the caller (CLI layer).
+
+    Optimizations retained from Mission 6.5.2:
+    - LLM action membership test uses a module-level ``frozenset``.
     - Tool/service lookup is short-circuited: tools are checked first and
       the service lookup is only attempted when the tool lookup misses.
-    - Repeated ``getattr(task, ...)`` calls are replaced with local variable
-      bindings to avoid repeated attribute lookup overhead.
-    - Trailing CRLF line endings cleaned up.
     """
 
     def __init__(self):
@@ -26,6 +33,14 @@ class Dispatcher:
         self.tools = ToolRegistry()
         self.services = ServiceRegistry()
         self.logger = get_logger("dispatcher")
+
+        # Safety layer (Mission 7.1.8 components, wired in Mission 7.5).
+        # Registries are shared so wrapper validation sees the same
+        # routing table the dispatcher uses.
+        self.tool_wrapper = ToolWrapper(
+            validator=CapabilityValidator(actions=self.actions, tools=self.tools),
+            permission_checker=PermissionChecker(),
+        )
 
     def dispatch(self, task):
         action = getattr(task, "action", None)
@@ -43,9 +58,10 @@ class Dispatcher:
             target_name, method_name = route
 
             # Prefer tool; fall back to service.
-            target = self.tools.get(target_name)
-            if target is None:
-                target = self.services.get(target_name)
+            if self.tools.get(target_name) is not None:
+                return self._dispatch_tool(action, target_name, task)
+
+            target = self.services.get(target_name)
 
             if target is None:
                 message = f"Dispatcher Error: missing target '{target_name}'."
@@ -81,22 +97,6 @@ class Dispatcher:
                 target=target_name,
             )
 
-            print()
-
-            if action == constants.ACTION_PROJECT_SUMMARY:
-                summary = result["summary"]
-                print("AMALGAM")
-                print()
-                print(f"Project Root : {summary['project_root']}")
-                print(f"Packages     : {len(summary['python_packages'])}")
-                print(f"Documents    : {summary['documents']}")
-                print(f"Symbols      : {summary['symbols']}")
-                print(f"Relations    : {summary['relationships']}")
-            else:
-                print("AMALGAM:")
-                print()
-                print(result)
-
             return result
 
         if action in _LLM_ACTIONS:
@@ -116,13 +116,34 @@ class Dispatcher:
                 result = f"Dispatcher Error: {e}"
                 self.logger.error(result)
 
-            print()
-            print("AMALGAM:\n")
-            print(result)
-
             return result
 
         message = f"Unknown action: {action}"
         self.logger.warning(message, action=action)
 
+        return message
+
+    def _dispatch_tool(self, action, target_name, task):
+        """Dispatch a tool-targeted action through the ToolWrapper.
+
+        The wrapper provides capability validation, permission checks,
+        timeout, and retry. The raw tool output is returned on success
+        to preserve the historical dispatch contract; failures return a
+        ``Dispatcher Error`` string as before.
+        """
+        tool_result = self.tool_wrapper.invoke(action, getattr(task, "data", None))
+
+        self.logger.debug(
+            "dispatch complete",
+            action=action,
+            target=target_name,
+            success=tool_result.success,
+            execution_time=tool_result.execution_time,
+        )
+
+        if tool_result.success:
+            return tool_result.output
+
+        message = f"Dispatcher Error: {tool_result.error}"
+        self.logger.error(message)
         return message

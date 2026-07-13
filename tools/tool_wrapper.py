@@ -185,7 +185,7 @@ class ToolWrapper:
 
         if action == constants.ACTION_REMEMBER:
             if not isinstance(data, (tuple, list)) or len(data) != 2:
-                raise ValueError("remember action requires key and value")
+                raise ValueError("remember action requires key and value.")
             return method(data[0], data[1])
         return method(data)
 
