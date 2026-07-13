@@ -136,7 +136,7 @@ Original Idea: The proposed Mission 7 roadmap assigned '7.4 = Event Bus'.
 Evolution: The Event Bus was actually implemented as sub-step 7.1.5. This proposed label for a top-level 7.4 was never acted upon.
 Final Known State: Not adopted as a 7.4 deliverable; functionality exists under 7.1.5.
 Dependencies: Not specified
-Confidence: Medium
+Confidence: Medium                                                      
 ====================================================
 
 ====================================================
