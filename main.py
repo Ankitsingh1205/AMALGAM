@@ -103,7 +103,7 @@ def run_mission(goal: str, timeout: float = 300.0) -> dict:
     messaging = Messaging()
     work_pool = WorkPool(messaging)
     resolver = DependencyResolver()
-    fleet = FleetManager()
+    fleet = FleetManager(messaging)
     context = SharedContext()
     context.set("task", goal)
 
