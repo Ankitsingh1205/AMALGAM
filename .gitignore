@@ -19,3 +19,10 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+# AMALGAM runtime state (Mission 7.4 hygiene)
+storage/memory/memory.json
+output.txt
+*.vsix
+*.bak
+__pycache__/
+.pytest_cache/
