@@ -19,9 +19,24 @@ def test_file_tool_lists_directory(tmp_path):
     assert tool.list_dir(tmp_path) == ["note.txt"]
 
 
-def test_executor_dispatches_file_list_task(tmp_path):
-    path = tmp_path / "note.txt"
-    path.write_text("hello", encoding="utf-8")
+def test_executor_dispatches_file_list_task():
+    kernel = Executor()
+
+    result = kernel.execute(
+        Task(
+            intent="files",
+            action="list_files",
+            data=".",
+        )
+    )
+
+    assert isinstance(result, list)
+    assert "main.py" in result
+
+
+def test_executor_blocks_file_list_outside_workspace(tmp_path):
+    """Mission 7.6 (SEC-003/004): kernel-dispatched FileTool is confined
+    to the workspace root; paths outside it are rejected."""
     kernel = Executor()
 
     result = kernel.execute(
@@ -32,4 +47,5 @@ def test_executor_dispatches_file_list_task(tmp_path):
         )
     )
 
-    assert result == ["note.txt"]
+    assert isinstance(result, str)
+    assert "Error" in result

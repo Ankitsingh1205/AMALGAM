@@ -1,6 +1,7 @@
 from tools.calculator import Calculator
 from tools.python_executor import PythonExecutor
 from tools.file_tool import FileTool
+from pathlib import Path
 from tools.memory_tool import MemoryTool
 from tools.internet_tool import InternetTool
 from config import constants
@@ -13,7 +14,7 @@ class ToolRegistry:
         self.tools = {
             constants.TOOL_CALCULATOR: Calculator(),
             constants.TOOL_PYTHON: PythonExecutor(),
-            constants.TOOL_FILES: FileTool(),
+            constants.TOOL_FILES: FileTool(workspace_root=Path.cwd()),
             constants.TOOL_MEMORY: MemoryTool(),
             constants.TOOL_INTERNET: InternetTool()
         }

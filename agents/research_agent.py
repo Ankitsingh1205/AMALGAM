@@ -89,9 +89,11 @@ class ResearchAgent(BaseAgent):
 
     def _research_files(self, task: str) -> dict:
         """Gather file system context."""
+        from pathlib import Path
+
         from tools.file_tool import FileTool
         try:
-            ft = FileTool()
+            ft = FileTool(workspace_root=Path.cwd())
             files = ft.list_dir(".")
             return {
                 "current_directory": ".",

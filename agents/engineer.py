@@ -1,3 +1,4 @@
+from pathlib import Path
 from tools.file_tool import FileTool
 from tools.python_executor import PythonExecutor
 from brain.executor.autonomous_executor import AutonomousExecutor
@@ -24,7 +25,7 @@ class EngineerAgent:
     """
 
     def __init__(self, autonomous_executor: AutonomousExecutor = None) -> None:
-        self.files = FileTool()
+        self.files = FileTool(workspace_root=Path.cwd())
         self.executor = PythonExecutor()
         self.project = ProjectService() if ProjectService else None
         self.autonomous = autonomous_executor or AutonomousExecutor()
