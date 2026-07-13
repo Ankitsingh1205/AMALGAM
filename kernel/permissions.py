@@ -13,7 +13,7 @@ Permission rules:
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Optional
 
 from config import constants
@@ -119,10 +119,19 @@ class PermissionChecker:
         if data is None:
             return
 
-        if not isinstance(data, (str, Path)):
+        if isinstance(data, dict):
+            data = data.get("path")
+        if data is None:
             return
+        if not isinstance(data, (str, Path)):
+            raise PermissionError("Filesystem action requires a path")
 
-        candidate = Path(str(data)).resolve()
+        text = str(data)
+        # Reject Windows absolute/drive paths even when running on POSIX.
+        if PureWindowsPath(text).drive:
+            raise PermissionError(f"Path escapes workspace root: {text}")
+        raw = Path(text)
+        candidate = (workspace_root / raw).resolve() if not raw.is_absolute() else raw.resolve()
         try:
             candidate.relative_to(workspace_root)
         except ValueError:

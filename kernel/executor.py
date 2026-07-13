@@ -9,10 +9,10 @@ from services.logger import get_logger
 
 class Executor:
 
-    def __init__(self):
+    def __init__(self, workspace_root=None):
 
         self.state = KernelState()
-        self.dispatcher = Dispatcher()
+        self.dispatcher = Dispatcher(workspace_root=workspace_root)
         self.logger = get_logger("kernel")
 
     def boot(self):

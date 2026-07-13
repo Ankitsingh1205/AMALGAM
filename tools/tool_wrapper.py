@@ -187,6 +187,14 @@ class ToolWrapper:
             if not isinstance(data, (tuple, list)) or len(data) != 2:
                 raise ValueError("remember action requires key and value.")
             return method(data[0], data[1])
+        if action == constants.ACTION_WRITE_FILE:
+            if not isinstance(data, dict) or set(data) != {"path", "content"}:
+                raise ValueError("write_file requires path and content")
+            return method(data["path"], data["content"])
+        if action == constants.ACTION_REPLACE_TEXT:
+            if not isinstance(data, dict) or set(data) != {"path", "old", "new"}:
+                raise ValueError("replace_text requires path, old and new")
+            return method(data["path"], data["old"], data["new"])
         return method(data)
 
     def _publish_event(

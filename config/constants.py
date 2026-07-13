@@ -21,6 +21,8 @@ ACTION_RUN_PYTHON = "run_python"
 ACTION_SEARCH_WEB = "search_web"
 ACTION_PROJECT_SUMMARY = "project_summary"
 ACTION_VERIFY = "verify"
+ACTION_WRITE_FILE = "write_file"
+ACTION_REPLACE_TEXT = "replace_text"
 
 APP_EXIT_COMMANDS = ("exit", "quit")
 

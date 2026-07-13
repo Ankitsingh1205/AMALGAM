@@ -1,4 +1,4 @@
-﻿from config import constants
+from config import constants
 
 
 class ActionRegistry:
@@ -13,6 +13,8 @@ class ActionRegistry:
             constants.ACTION_RECALL: (constants.TOOL_MEMORY, "recall"),
             constants.ACTION_SEARCH_WEB: (constants.TOOL_INTERNET, "search"),
             constants.ACTION_PROJECT_SUMMARY: (constants.SERVICE_PROJECT, "summarize"),
+            constants.ACTION_WRITE_FILE: (constants.TOOL_FILES, "write"),
+            constants.ACTION_REPLACE_TEXT: (constants.TOOL_FILES, "replace_text"),
         }
 
     def get(self, action):

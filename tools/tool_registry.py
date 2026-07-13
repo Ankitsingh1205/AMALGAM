@@ -9,12 +9,13 @@ from config import constants
 
 class ToolRegistry:
 
-    def __init__(self):
+    def __init__(self, workspace_root=None):
 
+        root = Path(workspace_root).resolve() if workspace_root else Path.cwd()
         self.tools = {
             constants.TOOL_CALCULATOR: Calculator(),
             constants.TOOL_PYTHON: PythonExecutor(),
-            constants.TOOL_FILES: FileTool(workspace_root=Path.cwd()),
+            constants.TOOL_FILES: FileTool(workspace_root=root),
             constants.TOOL_MEMORY: MemoryTool(),
             constants.TOOL_INTERNET: InternetTool()
         }
