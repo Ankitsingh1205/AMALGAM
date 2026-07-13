@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import shutil
 import subprocess
 
 import pytest
@@ -61,7 +60,6 @@ def init_repository(tmp_path: Path) -> Path:
     (scripts / "check.py").write_text(
         "from pathlib import Path\nassert Path('hello.txt').read_text() == 'hello\\n'\n",
         encoding="utf-8",
-        newline="",  # Preserve LF even on Windows for git consistency
     )
     docs = tmp_path / "docs" / "00_START_HERE"
     docs.mkdir(parents=True)
@@ -70,14 +68,6 @@ def init_repository(tmp_path: Path) -> Path:
     git(tmp_path, "add", ".")
     git(tmp_path, "commit", "-qm", "fixture")
     return tmp_path
-
-
-
-@pytest.fixture(scope="session", autouse=True)
-def check_git_available():
-    """Skip all tests if git is not available (Windows path issues)."""
-    if shutil.which("git") is None:
-        pytest.skip("git not found on PATH", allow_module_level=True)
 
 
 @pytest.fixture
@@ -91,7 +81,7 @@ def write_plan() -> EngineeringPlan:
         tasks=[PlanTask(
             id="write", description="write greeting", action="write_file", capability="files",
             affected_paths=["hello.txt"], acceptance_criteria=["file contains hello"],
-            data={"path": "hello.txt", "content": "hello\n", "newline": ""},
+            data={"path": "hello.txt", "content": "hello\n"},
         )],
         verification_commands=["python scripts/check.py"],
     )
