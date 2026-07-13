@@ -26,3 +26,4 @@ output.txt
 *.bak
 __pycache__/
 .pytest_cache/
+.amalgam-core/MISSION_8_STATE.json

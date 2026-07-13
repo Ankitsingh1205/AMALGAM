@@ -28,9 +28,9 @@ class Dispatcher:
       the service lookup is only attempted when the tool lookup misses.
     """
 
-    def __init__(self):
+    def __init__(self, workspace_root=None):
         self.actions = ActionRegistry()
-        self.tools = ToolRegistry()
+        self.tools = ToolRegistry(workspace_root=workspace_root)
         self.services = ServiceRegistry()
         self.logger = get_logger("dispatcher")
 
@@ -39,7 +39,7 @@ class Dispatcher:
         # routing table the dispatcher uses.
         self.tool_wrapper = ToolWrapper(
             validator=CapabilityValidator(actions=self.actions, tools=self.tools),
-            permission_checker=PermissionChecker(),
+            permission_checker=PermissionChecker(workspace_root=workspace_root),
         )
 
     def dispatch(self, task):

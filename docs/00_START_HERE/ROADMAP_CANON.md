@@ -159,29 +159,30 @@ and verified." Scorecard and verdict:
 As-built architecture (constitutional cure):
 `docs/00_START_HERE/MISSION_7_MASTER_ARCHITECTURE.md`.
 
-## Mission 8 — DEFINED
+## Mission 8 — CLOSED
 
 - **Mission ID:** Mission 8
-- **Status:** DEFINED (not started)
-- **Title:** The Reasoning Layer — Model Specialization & Intelligent Planning
+- **Status:** CLOSED — released as `v0.8.0`
+- **Title:** Primary Engineering System — Repository-Aware Autonomous Engineering Loop
 - **Depends On:** Mission 7 (closed).
-- **Objective:** Replace the heuristic planning/intent/reflection layers
-  with model-driven reasoning, so the orchestration substrate delivered by
-  Mission 7 is inhabited by actual intelligence. Inherits the unmet
-  Mission 7 criteria (2, 4, 6, 7, 8) as its success criteria.
-- **Scope (high level):**
-  1. LLM-driven decomposition replacing keyword heuristics
-     (PlannerAgent/IntentAnalyzer), with tool-contract system prompts.
-  2. Review as an enforced gate: ReviewerAgent must approve before a
-     mission result is emitted; failed review feeds ReflectionEngine.
-  3. Root-cause recovery: reflection informs strategy change, not just retry.
-  4. Model specialization: fine-tune local models (LoRA/QLoRA) on
-     AMALGAM's own ExecutionMemory traces plus teacher-distilled data
-     for planning, tool routing, and reflection tasks.
-  5. Exit demonstration: one real engineering objective taken to
-     reviewed, working output (Criterion 8).
-- **Constitutional requirement:** MISSION_8_MASTER_ARCHITECTURE.md must be
-  written and frozen BEFORE implementation begins. No exceptions this time.
+- **Objective:** Make AMALGAM the repository-aware primary engineering system:
+  reconstruct current work without chat history; reason and plan with the
+  existing local `qwen2.5-coder:7b` model; pause for exact-plan approval;
+  edit, test, review, repair and create a verified local commit; and inherit
+  the unmet Mission 7 criteria (2, 4, 6, 7, 8).
+- **Scope:** Repository context/recovery, structured local-model reasoning,
+  approval-gated execution, mandatory review, bounded root-cause repair,
+  safe local commits, and a real end-to-end engineering demonstration.
+- **Non-goals:** Model fine-tuning/distillation, cloud AI, deployment,
+  dependency upgrades, browser automation, and autonomous remote Git actions.
+- **Model:** Existing Ollama `qwen2.5-coder:7b`; replaceable interface.
+- **Constitutional requirement:** SATISFIED —
+  `MISSION_8_MASTER_ARCHITECTURE.md` was written and frozen before
+  implementation began.
+- **Verification:** 942 tests passed and the deterministic end-to-end
+  engineering demo passed. The optional owner-environment model smoke remains
+  available as `scripts/mission_8_model_smoke.py`; see
+  `docs/04_MISSIONS/MISSION_8/COMPLETION_REPORT.md`.
 
 ## Unchanged reservations
 
