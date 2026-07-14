@@ -7,8 +7,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 APP_NAME = "AMALGAM OS"
 APP_DESCRIPTION = "Artificial Intelligence Operating System"
-APP_VERSION = "0.8.0rc1"
-BUILD_TYPE = "release-candidate"
+APP_VERSION = "0.8.0"
+BUILD_TYPE = "stable"
 ENVIRONMENT = "local"
 
 OLLAMA_HOST = "http://127.0.0.1:11434"
