@@ -13,6 +13,7 @@ Permission rules:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path, PureWindowsPath
 from typing import Optional
 
@@ -127,8 +128,11 @@ class PermissionChecker:
             raise PermissionError("Filesystem action requires a path")
 
         text = str(data)
-        # Reject Windows absolute/drive paths even when running on POSIX.
-        if PureWindowsPath(text).drive:
+        # On non-Windows hosts, Path treats "C:\..." as a relative path and would
+        # join it under the workspace. Reject drive-letter paths there.
+        # On Windows, real in-workspace absolute paths also have drives, so
+        # containment is decided solely by relative_to() below.
+        if os.name != "nt" and PureWindowsPath(text).drive:
             raise PermissionError(f"Path escapes workspace root: {text}")
         raw = Path(text)
         candidate = (workspace_root / raw).resolve() if not raw.is_absolute() else raw.resolve()

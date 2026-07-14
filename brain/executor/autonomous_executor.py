@@ -502,15 +502,24 @@ class AutonomousExecutor:
         text = goal.description.lower()
         tasks = []
 
-        # Math
-        if goal.description.strip().replace(" ", "").replace(".", "").replace("(", "").replace(")", "").isdigit() or \
-           any(op in goal.description for op in ["+", "-", "*", "/"]):
+        # Math — pure expressions OR explicit calculate/math/compute/sum goals.
+        # "Calculate not_an_expr" must route to the calculator (not chat) so
+        # invalid expressions fail deterministically without LLM fallback.
+        math_keyword = any(word in text for word in _PLAN_KW_MATH)
+        pure_expr = goal.description.strip().replace(" ", "").replace(".", "").replace("(", "").replace(")", "").isdigit() or \
+            any(op in goal.description for op in ["+", "-", "*", "/"])
+        if math_keyword or pure_expr:
+            data = goal.description.strip()
+            for prefix in ("calculate ", "compute ", "math ", "sum "):
+                if text.startswith(prefix):
+                    data = goal.description[len(prefix):].strip() or data
+                    break
             tasks.append({
                 "id": str(uuid.uuid4()),
                 "plan_version": goal.plan_version,
                 "intent": constants.INTENT_MATH,
                 "action": constants.ACTION_CALCULATE,
-                "data": goal.description.strip(),
+                "data": data,
             })
             return tasks
 

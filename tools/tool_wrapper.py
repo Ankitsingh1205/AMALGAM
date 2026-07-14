@@ -130,6 +130,22 @@ class ToolWrapper:
                                              action, data)
                     raw_output = future.result(timeout=self._timeout)
                     elapsed = time.monotonic() - start
+                    # Calculator preserves historical raw contract: invalid expressions return None.
+                    # Treat that as a failed tool invocation so missions/evaluator do not mark success.
+                    if tool_name == "calculator" and raw_output is None:
+                        self._publish_event("tool_failed", tool_name, method_name, None)
+                        return ToolResult.fail(
+                            error="Calculator could not evaluate expression",
+                            tool_name=tool_name,
+                            output=None,
+                            execution_time=round(elapsed, 6),
+                            metadata={
+                                "action": action,
+                                "method": method_name,
+                                "attempts": attempt,
+                                "reason": "calculator_invalid_expression",
+                            },
+                        )
                     self._publish_event("tool_succeeded", tool_name, method_name, raw_output)
                     return ToolResult.ok(
                         output=raw_output,

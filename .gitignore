@@ -27,3 +27,9 @@ output.txt
 __pycache__/
 .pytest_cache/
 .amalgam-core/MISSION_8_STATE.json
+
+# Runtime files
+storage/memory/memory.json
+.amalgam-core/*.json
+*.pyc
+__pycache__/
